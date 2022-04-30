@@ -72,7 +72,7 @@
                 </StackPanel>
 
                 <Border Width="500" Height="25" BorderBrush="#000" BorderThickness="1" CornerRadius="3" Padding="2" Margin="0,0,0,1" >
-                    <StackPanel Name="leaderboardheaderStacky"></StackPanel>
+                    <StackPanel Name="leaderboardheaderStacky" HorizontalAlignment="Center"></StackPanel>
                 </Border>
                 <Border Width="500" Height="300" BorderBrush="#000" BorderThickness="1" CornerRadius="3" Padding="2" >
                     <ScrollViewer HorizontalAlignment="Center" Width="450" Background="Transparent" VerticalAlignment="Top" VerticalScrollBarVisibility="Auto">
@@ -97,7 +97,8 @@
                 <Label Margin="10" Name="DragDropInput_Competition" Width="150" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
                      Drop="DragDropInput_Competition_Drop">Drag 'n' Drop</Label>
                 <Button Click="Button_Click_2" Width="30" HorizontalAlignment="Right">
-                    <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image></Button>
+                    <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
+                </Button>
                 <DockPanel>
                     <StackPanel>
                         <Label>Your results:</Label>
@@ -150,70 +151,22 @@
                     <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">klutchId:</Label>
                     <TextBox Grid.Row="1" Grid.Column="1" Name="klutchIdInput" LostFocus="klutchIdInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
                 </Grid>
-                
+
                 <StackPanel Margin="5,0,0,0">
-                        <Label>Find klutchId:</Label>
-                        <DockPanel>
-                            <TextBox Name="klutchIdFinder_Username" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Username_GotFocus" LostFocus="klutchIdFinder_Username_LostFocus">Enter username</TextBox>
-                            <TextBox Name="klutchIdFinder_Scenario" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Scenario_GotFocus" LostFocus="klutchIdFinder_Scenario_LostFocus">Enter scenario</TextBox>
-                            <Button Click="Button_Click_5" Height="20">Find</Button>
-                            <DockPanel Margin="5,0,0,0" Name="klutchIdFinderOutput" Visibility="Hidden">
-                                <Label>Result:</Label>
-                                <TextBox VerticalAlignment="Center" Name="klutchIdFinderOutputText" HorizontalAlignment="Left" Width="160"></TextBox>
-                            </DockPanel>
+                    <Label>Find klutchId:</Label>
+                    <DockPanel>
+                        <TextBox Name="klutchIdFinder_Username" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Username_GotFocus" LostFocus="klutchIdFinder_Username_LostFocus">Enter username</TextBox>
+                        <TextBox Name="klutchIdFinder_Scenario" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Scenario_GotFocus" LostFocus="klutchIdFinder_Scenario_LostFocus">Enter scenario</TextBox>
+                        <Button Click="Button_Click_3" Height="20">Find</Button>
+                        <DockPanel Margin="5,0,0,0" Name="klutchIdFinderOutput" Visibility="Hidden">
+                            <Label>Result:</Label>
+                            <TextBox VerticalAlignment="Center" Name="klutchIdFinderOutputText" HorizontalAlignment="Left" Width="160"></TextBox>
                         </DockPanel>
-                        <StackPanel HorizontalAlignment="Left">
-                            <Label FontWeight="Bold">Screen Capture</Label>
-                            <DockPanel>
-                                <Label>Hotkey:</Label>
-                                <Button Name="recordHotkeySet" ToolTip="Click to set" Click="recordHotkeySet_Click">None</Button>
-                            </DockPanel>
-                        <DockPanel>
-                            <CheckBox FlowDirection="RightToLeft" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked">
-                                <TextBlock FlowDirection="LeftToRight" Text="Enable:" />
-                            </CheckBox>
-                        </DockPanel>
-                        <ComboBox SelectedValue="{Binding Path=ReplayBufferSeconds}">
-                            <ComboBoxItem>15s</ComboBoxItem>
-                            <ComboBoxItem>30s</ComboBoxItem>
-                            <ComboBoxItem>60s</ComboBoxItem>
-                            <ComboBoxItem>90s</ComboBoxItem>
-                            <ComboBoxItem>120s</ComboBoxItem>
-                        </ComboBox>
-                            <Button Name="recordStartButton" Click="Button_Click_3" Width="60">Record!</Button>
-                            <Button Name="recordStopButton" Click="Button_Click_4" Width="60" 
-                                Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVis}}">Stop!</Button>
-                        </StackPanel>
-                    <Button Click="Button_Click_6" Width="100">screenshot</Button>
-                    </StackPanel>
+                    </DockPanel>
+
                 </StackPanel>
+            </StackPanel>
 
         </StackPanel>
-
-        <DockPanel Grid.Column="0" Grid.Row="2" Name="ReplayBufferBar" Visibility="{Binding Path=BorderVisible}" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
-                <Label VerticalContentAlignment="Center" VerticalAlignment="Center">Replaybuffer:</Label>
-
-                <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="100" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVis}}">
-                    <Button VerticalAlignment="Center" Background="Transparent">
-                        <Image Source="Images/redsign.png" Height="15" Width="15">
-                            <!--RenderTransformOrigin=".5,.5"
-                        <Image.RenderTransform>
-                            <RotateTransform x:Name="AnimatedRotateTransform" Angle="0" />
-                        </Image.RenderTransform>
-                        <Image.Triggers>
-                            <EventTrigger RoutedEvent="MouseDown">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="AnimatedRotateTransform" Storyboard.TargetProperty="Angle" 
-                                                         By="10" To="360" Duration="0:0:0.5" FillBehavior="Stop" />
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Image.Triggers>-->
-                        </Image>
-                    </Button>
-                    <TextBlock Name="replayBufferStatus_Output" VerticalAlignment="Center">Recording...</TextBlock>
-                </DockPanel>
-            </DockPanel>
     </Grid>
 </Window >

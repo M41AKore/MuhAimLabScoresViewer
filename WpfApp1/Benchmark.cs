@@ -115,7 +115,7 @@ namespace MuhAimLabScoresViewer
 
             benchStacky.Children.Add(new Border()
             {
-                Background = Brushes.LightBlue,
+                Background = Brushes.LightGray,
                 BorderBrush = Brushes.Black,
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(5),

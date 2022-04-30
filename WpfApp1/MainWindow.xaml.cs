@@ -90,11 +90,6 @@ namespace MuhAimLabScoresViewer
         public static MainWindow Instance { get; private set; }
         private ViewModel viewModel;
 
-        Process recorderProcess = null;
-        string outputFileName;
-        string outputPath;
-        string h264 = "";
-
 
         public MainWindow()
         {
@@ -146,7 +141,7 @@ namespace MuhAimLabScoresViewer
             SettingsTab.Visibility = Visibility.Collapsed;
             SettingsButton_BottomBorder.Visibility = Visibility.Visible;
 
-            this.Height = 830;
+            this.Height = 840;
             this.Width = 800;
         }
         private void CompetitionButton_Click(object sender, RoutedEventArgs e)
@@ -241,36 +236,8 @@ namespace MuhAimLabScoresViewer
             var tb = sender as System.Windows.Controls.TextBox;
             if (tb != null && string.IsNullOrEmpty(tb.Text)) tb.Text = "Enter username";
         }
-        private void Button_Click_4(object sender, RoutedEventArgs e) => stopRecording();
-        private void Button_Click_5(object sender, RoutedEventArgs e) => buildklutchIdCall();
-        private void Button_Click_3(object sender, RoutedEventArgs e) => startRecording();
-        private void recordHotkeySet_Click(object sender, RoutedEventArgs e)
-        {
-            var btn = sender as Button;
-            if (btn != null)
-            {
-                btn.Content = "press key";
-                btn.KeyUp += Btn_KeyDown;
-            }
-        }
-        private void Btn_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            var btn = sender as Button;
-            if (btn != null)
-            {
-                btn.KeyUp -= Btn_KeyDown;
-                btn.Content = e.Key.ToString();
-            }
-            currentSettings.RecordingHotKey = e.Key;
+        private void Button_Click_3(object sender, RoutedEventArgs e) => buildklutchIdCall();
 
-            this.KeyUp += MainWindow_KeyDown; //only works when window in focus
-        }     
-        private void CheckBox_Checked(object sender, RoutedEventArgs e) => viewModel.BorderVisible = Visibility.Visible; //change to in xaml with converter
-        private void CheckBox_Unchecked(object sender, RoutedEventArgs e) => viewModel.BorderVisible = Visibility.Collapsed;
-        private void Button_Click_6(object sender, RoutedEventArgs e) => takeScreenshot();
-
-
-     
         private static async Task<Item> httpstuff(string call)
         {
             using (HttpClient client = new HttpClient())
@@ -483,7 +450,7 @@ namespace MuhAimLabScoresViewer
         {
             var headerDocky = new DockPanel()
             {
-                Margin = new Thickness(5, 2, 5, 2),
+                Margin = new Thickness(-10, 2, 5, 2),
                 //Background = Brushes.Red
                 Width = 380
             };
@@ -1121,78 +1088,6 @@ namespace MuhAimLabScoresViewer
             {
                 MessageBox.Show(e.Message);
             }
-        }
-
-        //nvenc screen recorder
-        private void startRecording()
-        {
-            var proc = new ProcessStartInfo();
-            proc.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.FileName = @"C:\Users\Kore\Downloads\NvEncSharp-master\src\NvEncSharp.Sample.ScreenCapture\bin\Debug\NvEncSharp.Sample.ScreenCapture.exe";
-
-            outputFileName = $"Replay_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}";
-            outputPath = "D:/ballertest/";
-            h264 = System.IO.Path.Combine(outputPath, outputFileName + ".264");
-
-            var parts = viewModel.ReplayBufferSeconds.Split(' ');
-            string seconds = parts.Length > 1 ? parts.Last().Substring(0, parts.Last().Length - 1) : parts[0].Substring(0, parts[0].Length - 1);
-            var args = $"-d \\\\.\\DISPLAY1 -o {outputPath} -file {outputFileName} -r 24 -f 60 -s {seconds}";
-            proc.Arguments = args;
-            recorderProcess = Process.Start(proc);
-
-            if (recorderProcess != null)
-            {
-                viewModel.IsRecording = true;
-
-                recordStartButton.Visibility = Visibility.Collapsed;
-                replayBufferStatus_Output.Text = "Recording...";
-                Trace.WriteLine("recording started!");
-            }
-            /*string output = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".mp4");
-            var snippet = FFmpeg.Conversions.FromSnippet.Convert(Resources.MkvWithAudio, output);
-            IConversionResult result = await snippet.Start();*/
-        }
-        private void stopRecording()
-        {
-            if (recorderProcess != null) recorderProcess.CloseMainWindow();
-            Trace.WriteLine("recording stopped!");
-            replayBufferStatus_Output.Text = "Saving...";
-
-            viewModel.IsRecording = false;
-            recordStartButton.Visibility = Visibility.Visible;
-
-            Thread.Sleep(1000); // ehm...
-
-            Console.WriteLine("converting to mp4...");
-            ProcessStartInfo proc = new ProcessStartInfo();
-            proc.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.FileName = @"C:\windows\system32\cmd.exe";
-            string mp4 = h264.Substring(0, h264.Length - 3) + "mp4";
-            proc.Arguments = $"/c D:\\ballertest\\ffmpeg-master\\bin\\ffmpeg.exe -y -i {h264} -c copy {mp4}"; //-loglevel quiet -nostats
-            var p = Process.Start(proc);
-            //p.Exited += P_Exited; ;
-            Trace.WriteLine("wrapped in mp4 container!");
-        }
-        private void P_Exited(object? sender, EventArgs e)
-        {
-            File.Delete(System.IO.Path.Combine(outputPath, $"{outputFileName}.264"));
-            Console.WriteLine("deleted h264 file!");
-        }
-        private void MainWindow_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            if (e.Key == currentSettings.RecordingHotKey)
-            {
-                MessageBox.Show("recording hotkey pressed!");
-            }
-        }
-        private void takeScreenshot()
-        {
-            var bmpScreenshot = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            var gfxScreenshot = Graphics.FromImage(bmpScreenshot);
-            gfxScreenshot.CopyFromScreen(Screen.PrimaryScreen.Bounds.X, Screen.PrimaryScreen.Bounds.Y, 0, 0, Screen.PrimaryScreen.Bounds.Size, CopyPixelOperation.SourceCopy);
-
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-            bmpScreenshot.Save($"D:/ballertest/Screenshot{timestamp}.png", System.Drawing.Imaging.ImageFormat.Png);
         }
     }
 }
