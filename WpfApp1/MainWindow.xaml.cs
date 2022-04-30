@@ -90,6 +90,12 @@ namespace MuhAimLabScoresViewer
         public static MainWindow Instance { get; private set; }
         private ViewModel viewModel;
 
+        Process recorderProcess = null;
+        string outputFileName;
+        string outputPath;
+        string h264 = "";
+
+
         public MainWindow()
         {
             if (Instance == null) Instance = this;
@@ -235,7 +241,205 @@ namespace MuhAimLabScoresViewer
             var tb = sender as System.Windows.Controls.TextBox;
             if (tb != null && string.IsNullOrEmpty(tb.Text)) tb.Text = "Enter username";
         }
+        private void Button_Click_4(object sender, RoutedEventArgs e) => stopRecording();
+        private void Button_Click_5(object sender, RoutedEventArgs e) => buildklutchIdCall();
+        private void Button_Click_3(object sender, RoutedEventArgs e) => startRecording();
+        private void recordHotkeySet_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn != null)
+            {
+                btn.Content = "press key";
+                btn.KeyUp += Btn_KeyDown;
+            }
+        }
+        private void Btn_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn != null)
+            {
+                btn.KeyUp -= Btn_KeyDown;
+                btn.Content = e.Key.ToString();
+            }
+            currentSettings.RecordingHotKey = e.Key;
 
+            this.KeyUp += MainWindow_KeyDown; //only works when window in focus
+        }     
+        private void CheckBox_Checked(object sender, RoutedEventArgs e) => viewModel.BorderVisible = Visibility.Visible; //change to in xaml with converter
+        private void CheckBox_Unchecked(object sender, RoutedEventArgs e) => viewModel.BorderVisible = Visibility.Collapsed;
+        private void Button_Click_6(object sender, RoutedEventArgs e) => takeScreenshot();
+
+
+     
+        private static async Task<Item> httpstuff(string call)
+        {
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    //f.e. "https://apiclient.aimlab.gg/leaderboards/scores?taskSlug=CsLevel.rA%20hebe.rA%20x%20Aim.R9GSEI&weaponName=Custom_rA100hz&map=42&mode=42&timeWindow=all");
+                    HttpResponseMessage response = await client.GetAsync(call);
+                    response.EnsureSuccessStatusCode();
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    var item = JsonConvert.DeserializeObject<Item>(responseBody);
+                    return item;
+                }
+                catch (HttpRequestException e)
+                {
+                    Console.WriteLine("\nException Caught!");
+                    Console.WriteLine("Message :{0} ", e.Message);
+                }
+            }
+            return null;
+        }      
+        private Settings loadSettings()
+        {
+            if (!File.Exists("./settings.xml")) File.WriteAllText("./settings.xml", "<Settings><SteamLibraryPath></SteamLibraryPath><klutchId></klutchId></Settings>");
+
+            var settings = XmlSerializer.deserializeXml<Settings>("./settings.xml");
+            SteamLibraryInput.Text = settings.SteamLibraryPath;
+            klutchIdInput.Text = settings.klutchId;
+
+            if (settings.RecordingHotKey != Key.None)
+            {
+
+            }
+
+            return settings;
+        }
+        private void getFileDrop(System.Windows.DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
+                foreach (string file in (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop))
+                    HandleFile(file);
+        }
+        private void HandleFile(string filepath)
+        {
+            timer.Start();
+            string filename = filepath.Split('\\').Last();
+
+            if (filename.ToLower().Contains("benchmark"))
+            {
+                var newbench = XmlSerializer.deserializeXml<Benchmark>(filepath);
+                if (newbench != null)
+                {                  
+                    currentBenchmark = newbench;
+                    Benchmark.addBenchmarkGUIHeaders(benchStacky);
+                    Benchmark.addBenchmarkScores(benchStacky);
+                    loadBenchmarkToGUI(newbench);
+                    currentBenchmarkFilePath = filepath;
+                }
+            }
+
+            if (filename.ToLower().Contains("competition") || filename.ToLower().Contains("comp"))
+            {
+                var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
+                if (newcomp != null)
+                {                
+                    loadCompetitionToGUI(newcomp);
+                    currentCompetitionFilePath = filepath;
+                }
+            }
+        }      
+        public static string buildAPICallFromTaskName(string task)
+        {
+            if (!Directory.Exists(currentSettings.SteamLibraryPath)) return null;
+
+            DirectoryInfo[] dirs = new DirectoryInfo(currentSettings.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
+            foreach (var dir in dirs)
+                foreach (var subdir in dir.GetDirectories())
+                    if (subdir.Name == "Levels")
+                        foreach (var file in subdir.GetDirectories()[0].GetFiles())
+                            if (file.Name == "level.es3")
+                            {
+                                var content = File.ReadAllText(file.FullName);
+                                if (content.Contains(task))
+                                {
+                                    var levelandweapon = collectLevelAndWeaponFromES3(content);
+                                    return "https://apiclient.aimlab.gg/leaderboards/scores?taskSlug=" +
+                                        levelandweapon.level + "&weaponName=" + levelandweapon.weapon + "&map=42&mode=42&timeWindow=all";
+                                }
+                            }
+
+            return null;
+        }
+        private static LevelAndWeapon collectLevelAndWeaponFromES3(string filecontent)
+        {
+            /** didn't work out cause stupid escape characters and \t\r\t\t spam
+             * 
+            //Regex regex = new Regex("contentMetadata.+?(?=\"id)"); //"contentMetadata.+?(?=\"category)"
+
+                                        var matches = regex.Matches(content);
+                                        if(matches.Count > 0)
+                                        {
+                                            var str = matches[0].Value.ToString();
+                                            //"contentMetadata" : {
+				                                //   "id" : "CsLevel.rA hebe.f96a4d2c.R2GOSC",
+				                                //    "label" : "rA Twoshot",
+
+                                            Regex r2 = new Regex("d\" : \".+\"");
+                                            //   d" : "CsLevel.rA hebe.f96a4d2c.R2GOSC"
+                                            var ms = r2.Matches(str);
+                                            if(ms.Count > 0)
+                                            {
+                                                var taskname = ms[0].Value.ToString().Substring(6, ms[0].Value.ToString().Length - 2);
+                                                Console.WriteLine("found task '" + taskname + "'");
+                                            }
+                                        }
+                                        */
+
+            var start = filecontent.IndexOf("contentMetadata");
+            var relevant = filecontent.Substring(start, filecontent.IndexOf("Skybox") - start);
+
+            var lines = relevant.Split(new string[] { "\",", "{", "}" }, StringSplitOptions.RemoveEmptyEntries);
+
+            var semirelevantlines = lines.Where(l => l.Contains("id\"") || l.Contains("label\"") || l.Contains("Weapon\"")).ToList();
+
+            var idline = semirelevantlines.Where(l => l.Contains("id\"")).FirstOrDefault();
+            var labelline = semirelevantlines.Where((l) => l.Contains("label\"")).FirstOrDefault();
+            var weaponline = semirelevantlines.FirstOrDefault(l => l.Contains("Weapon\""));
+
+            idline = uglyCleanup(idline);
+            labelline = uglyCleanup(labelline);
+            weaponline = uglyCleanup(weaponline);
+
+            var result = new LevelAndWeapon()
+            {
+                taskname = labelline,
+                level = idline.Replace(" ", "%20"),
+                weapon = weaponline
+            };
+
+            return result;
+        }
+        private static string uglyCleanup(string s)
+        {
+            s = s.Substring(s.IndexOf(':'), s.Length - s.IndexOf(':'));
+            s = s.Trim(new char[] { ':', '\\', '"' });
+            s = s.Trim('"');
+            s = s.Replace('"', ' ');
+            s = s.Trim();
+            //seems to do it...
+            return s;
+        }
+        public static SolidColorBrush getColorFromHex(string hexaColor)
+        {
+            return new SolidColorBrush(Color.FromArgb(255,
+                    Convert.ToByte(hexaColor.Substring(1, 2), 16),
+                    Convert.ToByte(hexaColor.Substring(3, 2), 16),
+                    Convert.ToByte(hexaColor.Substring(5, 2), 16)));
+        }
+        private async void launchUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
+        {
+            timer.Restart();
+
+            foreach (var call in calllist)
+            {
+                var t = Task.Run(async () => await getHighscore(call).ContinueWith(result => receiver(result))); // updateBenchmarkWithHighscore(result));
+            }
+        }
+
+        //task leaderboard
         private void getLeaderboardFor(string taskname)
         {
             string call = buildAPICallFromTaskName(taskname);
@@ -259,27 +463,6 @@ namespace MuhAimLabScoresViewer
             {
                 httpstuff(call).ContinueWith(item => populateleaderboard(item.Result.results));
             }
-        }
-        private static async Task<Item> httpstuff(string call)
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                try
-                {
-                    //f.e. "https://apiclient.aimlab.gg/leaderboards/scores?taskSlug=CsLevel.rA%20hebe.rA%20x%20Aim.R9GSEI&weaponName=Custom_rA100hz&map=42&mode=42&timeWindow=all");
-                    HttpResponseMessage response = await client.GetAsync(call);
-                    response.EnsureSuccessStatusCode();
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    var item = JsonConvert.DeserializeObject<Item>(responseBody);
-                    return item;
-                }
-                catch (HttpRequestException e)
-                {
-                    Console.WriteLine("\nException Caught!");
-                    Console.WriteLine("Message :{0} ", e.Message);
-                }
-            }
-            return null;
         }
         private void populateleaderboard(Result[] results)
         {
@@ -396,56 +579,8 @@ namespace MuhAimLabScoresViewer
                 leaderboardStacky.Children.Add(entryDocky);
             }
         }
-        private Settings loadSettings()
-        {
-            if (!File.Exists("./settings.xml")) File.WriteAllText("./settings.xml", "<Settings><SteamLibraryPath></SteamLibraryPath><klutchId></klutchId></Settings>");
 
-            var settings = XmlSerializer.deserializeXml<Settings>("./settings.xml");
-            SteamLibraryInput.Text = settings.SteamLibraryPath;
-            klutchIdInput.Text = settings.klutchId;
-
-            if (settings.RecordingHotKey != Key.None)
-            {
-
-            }
-
-            return settings;
-        }
-
-        private void getFileDrop(System.Windows.DragEventArgs e)
-        {
-            if (e.Data.GetDataPresent(System.Windows.DataFormats.FileDrop))
-                foreach (string file in (string[])e.Data.GetData(System.Windows.DataFormats.FileDrop))
-                    HandleFile(file);
-        }
-        private void HandleFile(string filepath)
-        {
-            timer.Start();
-            string filename = filepath.Split('\\').Last();
-
-            if (filename.ToLower().Contains("benchmark"))
-            {
-                var newbench = XmlSerializer.deserializeXml<Benchmark>(filepath);
-                if (newbench != null)
-                {                  
-                    currentBenchmark = newbench;
-                    Benchmark.addBenchmarkGUIHeaders(benchStacky);
-                    Benchmark.addBenchmarkScores(benchStacky);
-                    loadBenchmarkToGUI(newbench);
-                    currentBenchmarkFilePath = filepath;
-                }
-            }
-
-            if (filename.ToLower().Contains("competition") || filename.ToLower().Contains("comp"))
-            {
-                var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
-                if (newcomp != null)
-                {                
-                    loadCompetitionToGUI(newcomp);
-                    currentCompetitionFilePath = filepath;
-                }
-            }
-        }
+        //benchmark scores
         private void loadBenchmarkToGUI(Benchmark bench)
         {
             Trace.WriteLine("time taken for reading file = " + timer.ElapsedMilliseconds);
@@ -487,14 +622,29 @@ namespace MuhAimLabScoresViewer
             if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchUpdates(calllist, updateBenchmarkWithHighscore);
             else MessageBox.Show("please set 'klutchId' in Settings!");
         }
-        private async void launchUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
+        public static async Task<HighscoreUpdateCall> getHighscore(HighscoreUpdateCall call)
         {
-            timer.Restart();
-
-            foreach (var call in calllist)
+            using (HttpClient client = new HttpClient())
             {
-                var t = Task.Run(async () => await getHighscore(call).ContinueWith(result => receiver(result))); // updateBenchmarkWithHighscore(result));
+                try
+                {
+                    HttpResponseMessage response = await client.GetAsync(call.apicall);
+                    response.EnsureSuccessStatusCode();
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    Item item = JsonConvert.DeserializeObject<Item>(responseBody);
+
+                    foreach (var r in item.results)
+                        if (r.klutchId == currentSettings.klutchId)
+                            call.highscore = r.score.ToString();
+                }
+                catch (HttpRequestException e)
+                {
+                    Console.WriteLine("\nException Caught!");
+                    Console.WriteLine("Message :{0} ", e.Message);
+                }
             }
+
+            return call;
         }
         private string calculateUIScoreItemName(Task<HighscoreUpdateCall> call)
         {
@@ -529,7 +679,7 @@ namespace MuhAimLabScoresViewer
             }
         }
 
-        //personal score display
+        //personal competition score display
         private void loadCompetitionToGUI(Competition comp)
         {
             currentComp = comp;
@@ -618,7 +768,7 @@ namespace MuhAimLabScoresViewer
             return result;
         }
 
-        //all contender scores
+        //all competition contender scores
         private void buildCompLeaderboard(List<HighscoreUpdateCall> calllist)
         {
             List<Task> tasks = new List<Task>();
@@ -731,8 +881,7 @@ namespace MuhAimLabScoresViewer
             addOtherCompetitionGUI(CompInfoDocky); //timer
             addCompetitionLeaderboardGUIHeaders(CompInfoDocky); // headers
             addCompetitionLeaderboardGUIPlayerData(myDocky); // playerdata
-        }
-        
+        }    
         private void addCompetitionLeaderboardGUIPlayerData(DockPanel boardDocky)
         {
             for (int i = 0; i < currentComp.competitionContenders.Count; i++)
@@ -878,6 +1027,8 @@ namespace MuhAimLabScoresViewer
             }
             return item;
         }
+        
+        //other competition info
         private void addOtherCompetitionGUI(DockPanel boardDocky)
         {
             string? s = null;
@@ -946,184 +1097,8 @@ namespace MuhAimLabScoresViewer
             return isOver;
         }
 
-
-        public static async Task<HighscoreUpdateCall> getHighscore(HighscoreUpdateCall call)
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                try
-                {
-                    HttpResponseMessage response = await client.GetAsync(call.apicall);
-                    response.EnsureSuccessStatusCode();
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    Item item = JsonConvert.DeserializeObject<Item>(responseBody);
-
-                    foreach (var r in item.results)
-                        if (r.klutchId == currentSettings.klutchId)
-                            call.highscore = r.score.ToString();
-                }
-                catch (HttpRequestException e)
-                {
-                    Console.WriteLine("\nException Caught!");
-                    Console.WriteLine("Message :{0} ", e.Message);
-                }
-            }
-
-            return call;
-        }
-        public static string buildAPICallFromTaskName(string task)
-        {
-            if (!Directory.Exists(currentSettings.SteamLibraryPath)) return null;
-
-            DirectoryInfo[] dirs = new DirectoryInfo(currentSettings.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
-            foreach (var dir in dirs)
-                foreach (var subdir in dir.GetDirectories())
-                    if (subdir.Name == "Levels")
-                        foreach (var file in subdir.GetDirectories()[0].GetFiles())
-                            if (file.Name == "level.es3")
-                            {
-                                var content = File.ReadAllText(file.FullName);
-                                if (content.Contains(task))
-                                {
-                                    var levelandweapon = collectLevelAndWeaponFromES3(content);
-                                    return "https://apiclient.aimlab.gg/leaderboards/scores?taskSlug=" +
-                                        levelandweapon.level + "&weaponName=" + levelandweapon.weapon + "&map=42&mode=42&timeWindow=all";
-                                }
-                            }
-
-            return null;
-        }
-        private static LevelAndWeapon collectLevelAndWeaponFromES3(string filecontent)
-        {
-            /** didn't work out cause stupid escape characters and \t\r\t\t spam
-             * 
-            //Regex regex = new Regex("contentMetadata.+?(?=\"id)"); //"contentMetadata.+?(?=\"category)"
-
-                                        var matches = regex.Matches(content);
-                                        if(matches.Count > 0)
-                                        {
-                                            var str = matches[0].Value.ToString();
-                                            //"contentMetadata" : {
-				                                //   "id" : "CsLevel.rA hebe.f96a4d2c.R2GOSC",
-				                                //    "label" : "rA Twoshot",
-
-                                            Regex r2 = new Regex("d\" : \".+\"");
-                                            //   d" : "CsLevel.rA hebe.f96a4d2c.R2GOSC"
-                                            var ms = r2.Matches(str);
-                                            if(ms.Count > 0)
-                                            {
-                                                var taskname = ms[0].Value.ToString().Substring(6, ms[0].Value.ToString().Length - 2);
-                                                Console.WriteLine("found task '" + taskname + "'");
-                                            }
-                                        }
-                                        */
-
-            var start = filecontent.IndexOf("contentMetadata");
-            var relevant = filecontent.Substring(start, filecontent.IndexOf("Skybox") - start);
-
-            var lines = relevant.Split(new string[] { "\",", "{", "}" }, StringSplitOptions.RemoveEmptyEntries);
-
-            var semirelevantlines = lines.Where(l => l.Contains("id\"") || l.Contains("label\"") || l.Contains("Weapon\"")).ToList();
-
-            var idline = semirelevantlines.Where(l => l.Contains("id\"")).FirstOrDefault();
-            var labelline = semirelevantlines.Where((l) => l.Contains("label\"")).FirstOrDefault();
-            var weaponline = semirelevantlines.FirstOrDefault(l => l.Contains("Weapon\""));
-
-            idline = uglyCleanup(idline);
-            labelline = uglyCleanup(labelline);
-            weaponline = uglyCleanup(weaponline);
-
-            var result = new LevelAndWeapon()
-            {
-                taskname = labelline,
-                level = idline.Replace(" ", "%20"),
-                weapon = weaponline
-            };
-
-            return result;
-        }
-        private static string uglyCleanup(string s)
-        {
-            s = s.Substring(s.IndexOf(':'), s.Length - s.IndexOf(':'));
-            s = s.Trim(new char[] { ':', '\\', '"' });
-            s = s.Trim('"');
-            s = s.Replace('"', ' ');
-            s = s.Trim();
-            //seems to do it...
-            return s;
-        }
-
-        public static SolidColorBrush getColorFromHex(string hexaColor)
-        {
-            return new SolidColorBrush(Color.FromArgb(255,
-                    Convert.ToByte(hexaColor.Substring(1, 2), 16),
-                    Convert.ToByte(hexaColor.Substring(3, 2), 16),
-                    Convert.ToByte(hexaColor.Substring(5, 2), 16)));
-        }
-
-        Process recorderProcess = null;
-        string outputFileName;
-        string outputPath;
-        string h264 = "";
-
-        private void Button_Click_3(object sender, RoutedEventArgs e)
-        {
-            var proc = new ProcessStartInfo();
-            proc.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.FileName = @"C:\Users\Kore\Downloads\NvEncSharp-master\src\NvEncSharp.Sample.ScreenCapture\bin\Debug\NvEncSharp.Sample.ScreenCapture.exe";
-
-            outputFileName = $"Replay_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}";
-            outputPath = "D:/ballertest/";
-            h264 = System.IO.Path.Combine(outputPath, outputFileName + ".264");
-
-            var parts = viewModel.ReplayBufferSeconds.Split(' ');
-            string seconds = parts.Length > 1 ? parts.Last().Substring(0, parts.Last().Length-1) : parts[0].Substring(0, parts[0].Length-1);
-            var args = $"-d \\\\.\\DISPLAY1 -o {outputPath} -file {outputFileName} -r 24 -f 60 -s {seconds}"; 
-            proc.Arguments = args;
-            recorderProcess = Process.Start(proc);
-
-            if (recorderProcess != null)
-            {
-                viewModel.IsRecording = true; 
-
-                recordStartButton.Visibility = Visibility.Collapsed;
-                replayBufferStatus_Output.Text = "Recording...";
-                Trace.WriteLine("recording started!");
-            }
-            /*string output = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".mp4");
-            var snippet = FFmpeg.Conversions.FromSnippet.Convert(Resources.MkvWithAudio, output);
-            IConversionResult result = await snippet.Start();*/
-        }
-
-        private void Button_Click_4(object sender, RoutedEventArgs e)
-        {
-            if (recorderProcess != null) recorderProcess.CloseMainWindow();
-            Trace.WriteLine("recording stopped!");
-            replayBufferStatus_Output.Text = "Saving...";
-
-            viewModel.IsRecording = false;
-            recordStartButton.Visibility = Visibility.Visible;
-
-            Thread.Sleep(1000);
-
-            Console.WriteLine("converting to mp4...");
-            ProcessStartInfo proc = new ProcessStartInfo();
-            proc.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.FileName = @"C:\windows\system32\cmd.exe";
-            string mp4 = h264.Substring(0, h264.Length-3) + "mp4";
-            proc.Arguments = $"/c D:\\ballertest\\ffmpeg-master\\bin\\ffmpeg.exe -y -i {h264} -c copy {mp4}"; //-loglevel quiet -nostats
-            var p = Process.Start(proc);
-            //p.Exited += P_Exited; ;
-            Trace.WriteLine("wrapped in mp4 container!");
-        }
-
-        private void P_Exited(object? sender, EventArgs e)
-        {
-            File.Delete(System.IO.Path.Combine(outputPath, $"{outputFileName}.264"));
-            Console.WriteLine("deleted h264 file!");
-        }
-
-        private void Button_Click_5(object sender, RoutedEventArgs e)
+        //klutchId finder
+        private void buildklutchIdCall()
         {
             string providedName = klutchIdFinder_Username.Text;
             string providedScenario = klutchIdFinder_Scenario.Text;
@@ -1131,7 +1106,6 @@ namespace MuhAimLabScoresViewer
             string call = buildAPICallFromTaskName(providedScenario);
             if (call != null) httpstuff(call).ContinueWith(item => findklutchId(item.Result.results, providedName));
         }
-
         private void findklutchId(Result[] results, string playername)
         {
             try
@@ -1149,7 +1123,61 @@ namespace MuhAimLabScoresViewer
             }
         }
 
+        //nvenc screen recorder
+        private void startRecording()
+        {
+            var proc = new ProcessStartInfo();
+            proc.WindowStyle = ProcessWindowStyle.Hidden;
+            proc.FileName = @"C:\Users\Kore\Downloads\NvEncSharp-master\src\NvEncSharp.Sample.ScreenCapture\bin\Debug\NvEncSharp.Sample.ScreenCapture.exe";
 
+            outputFileName = $"Replay_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}";
+            outputPath = "D:/ballertest/";
+            h264 = System.IO.Path.Combine(outputPath, outputFileName + ".264");
+
+            var parts = viewModel.ReplayBufferSeconds.Split(' ');
+            string seconds = parts.Length > 1 ? parts.Last().Substring(0, parts.Last().Length - 1) : parts[0].Substring(0, parts[0].Length - 1);
+            var args = $"-d \\\\.\\DISPLAY1 -o {outputPath} -file {outputFileName} -r 24 -f 60 -s {seconds}";
+            proc.Arguments = args;
+            recorderProcess = Process.Start(proc);
+
+            if (recorderProcess != null)
+            {
+                viewModel.IsRecording = true;
+
+                recordStartButton.Visibility = Visibility.Collapsed;
+                replayBufferStatus_Output.Text = "Recording...";
+                Trace.WriteLine("recording started!");
+            }
+            /*string output = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".mp4");
+            var snippet = FFmpeg.Conversions.FromSnippet.Convert(Resources.MkvWithAudio, output);
+            IConversionResult result = await snippet.Start();*/
+        }
+        private void stopRecording()
+        {
+            if (recorderProcess != null) recorderProcess.CloseMainWindow();
+            Trace.WriteLine("recording stopped!");
+            replayBufferStatus_Output.Text = "Saving...";
+
+            viewModel.IsRecording = false;
+            recordStartButton.Visibility = Visibility.Visible;
+
+            Thread.Sleep(1000); // ehm...
+
+            Console.WriteLine("converting to mp4...");
+            ProcessStartInfo proc = new ProcessStartInfo();
+            proc.WindowStyle = ProcessWindowStyle.Hidden;
+            proc.FileName = @"C:\windows\system32\cmd.exe";
+            string mp4 = h264.Substring(0, h264.Length - 3) + "mp4";
+            proc.Arguments = $"/c D:\\ballertest\\ffmpeg-master\\bin\\ffmpeg.exe -y -i {h264} -c copy {mp4}"; //-loglevel quiet -nostats
+            var p = Process.Start(proc);
+            //p.Exited += P_Exited; ;
+            Trace.WriteLine("wrapped in mp4 container!");
+        }
+        private void P_Exited(object? sender, EventArgs e)
+        {
+            File.Delete(System.IO.Path.Combine(outputPath, $"{outputFileName}.264"));
+            Console.WriteLine("deleted h264 file!");
+        }
         private void MainWindow_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == currentSettings.RecordingHotKey)
@@ -1157,40 +1185,6 @@ namespace MuhAimLabScoresViewer
                 MessageBox.Show("recording hotkey pressed!");
             }
         }
-
-        private void recordHotkeySet_Click(object sender, RoutedEventArgs e)
-        {
-            var btn = sender as Button;
-            if (btn != null)
-            {
-                btn.Content = "press key";
-                btn.KeyUp += Btn_KeyDown;
-            }
-        }
-
-        private void Btn_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            var btn = sender as Button;
-            if (btn != null)
-            {
-                btn.KeyUp -= Btn_KeyDown;
-                btn.Content = e.Key.ToString();
-            }
-            currentSettings.RecordingHotKey = e.Key;
-
-            this.KeyUp += MainWindow_KeyDown; //only works when window in focus
-        }
-
-        //change to in xaml with converter
-        private void CheckBox_Checked(object sender, RoutedEventArgs e)
-        {
-            viewModel.BorderVisible = Visibility.Visible;
-        }
-        private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
-        {
-            viewModel.BorderVisible = Visibility.Collapsed;
-        }
-
         private void takeScreenshot()
         {
             var bmpScreenshot = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
@@ -1199,11 +1193,6 @@ namespace MuhAimLabScoresViewer
 
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             bmpScreenshot.Save($"D:/ballertest/Screenshot{timestamp}.png", System.Drawing.Imaging.ImageFormat.Png);
-        }
-
-        private void Button_Click_6(object sender, RoutedEventArgs e)
-        {
-            takeScreenshot();
         }
     }
 }
