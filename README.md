@@ -7,7 +7,7 @@ see https://github.com/M41AKore/MuhAimLabScoresViewer/releases for downloads
 
 
 
-#Setup
+# Setup
 After downloading, run "MuhAimLabScoresViewer.exe" to start the program.
 Please go to the settings tab (the gear icon button on the top right) and enter the path 
 to your Steam library which houses the workshop downloads for Aim Lab.
