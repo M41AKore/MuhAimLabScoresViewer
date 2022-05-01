@@ -19,13 +19,13 @@ Default this should be "C:\Program Files (x86)\Steam\", but you may have made a 
 on another drive such as "D:\SteamLibrary".
 
 At this point you'd be able to use the function of the "Task" tab to display leaderboards of scenarios 
-you've got on your workshop downloads.
+you've got in your workshop downloads.
 
 Next, you can use the "klutchId finder" to get your unique UserID from the Aim Lab API.
 This is used to find you in scoreboards.
 Enter the name of a scenario/task (case sensitive) that you have in your workshop downloads and 
 you know you've got a score registered, and enter the name you'd have on that leaderboard.
-If it's able to find you on that leaderboard, your klutchID will be present in a textfield to the right of the "find" button.
+If it's able to find you on that leaderboard, your klutchID will be presented in a textfield to the right of the "find" button.
 You can now copy and paste that ID into the "klutchId:" settings field.
 
 At this point you should be able to drag and drop either benchmark or competition files inside of the corresponding tabs to see your scores.
