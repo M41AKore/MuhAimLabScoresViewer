@@ -25,3 +25,4 @@ If it's able to find you on that leaderboard, your klutchID will be present in a
 You can now copy and paste that ID into the "klutchId:" settings field.
 
 At this point you should be able to drag and drop either benchmark or competition files inside of the corresponding tabs to see your scores.
+see https://github.com/M41AKore/BenchAndCompFiles/releases for downloads of such files I made so far.
