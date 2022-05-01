@@ -30,3 +30,6 @@ You can now copy and paste that ID into the "klutchId:" settings field.
 
 At this point you should be able to drag and drop either benchmark or competition files inside of the corresponding tabs to see your scores.
 see https://github.com/M41AKore/BenchAndCompFiles/releases for downloads of such files I made so far.
+
+# Disclaimer
+I'm a noob programmer and so yes, the code is messy and bad, and yes, there will be bugs.
