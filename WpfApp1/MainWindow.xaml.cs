@@ -90,6 +90,9 @@ namespace MuhAimLabScoresViewer
         public static MainWindow Instance { get; private set; }
         private ViewModel viewModel;
 
+        Task? countdownTimerTask = null;
+        bool updateCountdown = false;
+
 
         public MainWindow()
         {
@@ -158,7 +161,7 @@ namespace MuhAimLabScoresViewer
             SettingsTab.Visibility = Visibility.Collapsed;
             SettingsButton_BottomBorder.Visibility = Visibility.Visible;
 
-            this.Height = 575;
+            this.Height = 600;
             this.Width = 1125;
         }
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
@@ -200,9 +203,11 @@ namespace MuhAimLabScoresViewer
         private void DragDropInput_Competition_Drop(object sender, System.Windows.DragEventArgs e) => getFileDrop(e);
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            string url = "https://go.aimlab.gg/v1/redirects?link=aimlab://workshop?id=2765722547&source=16BAE1433DACC70D&link=steam://rungameid/714010";
+            string workshopID = "2801392956";
+            string source = "45EB3F9A792021DE";
+            string link = $"https://go.aimlab.gg/v1/redirects?link=aimlab://workshop?id=" + workshopID + "&source=" + source + "&link=steam://rungameid/714010";
 
-            System.Diagnostics.Process.Start("explorer", url);
+            System.Diagnostics.Process.Start("explorer", link);
         }
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
@@ -285,28 +290,32 @@ namespace MuhAimLabScoresViewer
             timer.Start();
             string filename = filepath.Split('\\').Last();
 
-            if (filename.ToLower().Contains("benchmark"))
+            if (!string.IsNullOrEmpty(currentSettings.SteamLibraryPath) && Directory.Exists(currentSettings.SteamLibraryPath))
             {
-                var newbench = XmlSerializer.deserializeXml<Benchmark>(filepath);
-                if (newbench != null)
-                {                  
-                    currentBenchmark = newbench;
-                    Benchmark.addBenchmarkGUIHeaders(benchStacky);
-                    Benchmark.addBenchmarkScores(benchStacky);
-                    loadBenchmarkToGUI(newbench);
-                    currentBenchmarkFilePath = filepath;
+                if (filename.ToLower().Contains("benchmark") || filename.ToLower().Contains("bench"))
+                {
+                    var newbench = XmlSerializer.deserializeXml<Benchmark>(filepath);
+                    if (newbench != null)
+                    {
+                        currentBenchmark = newbench;
+                        Benchmark.addBenchmarkGUIHeaders(benchStacky);
+                        Benchmark.addBenchmarkScores(benchStacky);
+                        loadBenchmarkToGUI(newbench);
+                        currentBenchmarkFilePath = filepath;
+                    }
                 }
-            }
 
-            if (filename.ToLower().Contains("competition") || filename.ToLower().Contains("comp"))
-            {
-                var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
-                if (newcomp != null)
-                {                
-                    loadCompetitionToGUI(newcomp);
-                    currentCompetitionFilePath = filepath;
+                if (filename.ToLower().Contains("competition") || filename.ToLower().Contains("comp"))
+                {
+                    var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
+                    if (newcomp != null)
+                    {
+                        loadCompetitionToGUI(newcomp);
+                        currentCompetitionFilePath = filepath;
+                    }
                 }
             }
+            else MessageBox.Show("please set SteamLibraryPath in Settings!");       
         }      
         public static string buildAPICallFromTaskName(string task)
         {
@@ -409,6 +418,12 @@ namespace MuhAimLabScoresViewer
         //task leaderboard
         private void getLeaderboardFor(string taskname)
         {
+            if (!Directory.Exists(currentSettings.SteamLibraryPath))
+            {
+                MessageBox.Show("please set SteamLibraryPath in Settings!");
+                return;
+            }
+
             string call = buildAPICallFromTaskName(taskname);
             if (call == null)
             {
@@ -587,7 +602,7 @@ namespace MuhAimLabScoresViewer
             Trace.WriteLine("time for building datagrids and calls: " + timer.ElapsedMilliseconds);
 
             if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchUpdates(calllist, updateBenchmarkWithHighscore);
-            else MessageBox.Show("please set 'klutchId' in Settings!");
+            else MessageBox.Show("please set klutchId in Settings!");
         }
         public static async Task<HighscoreUpdateCall> getHighscore(HighscoreUpdateCall call)
         {
@@ -1019,7 +1034,19 @@ namespace MuhAimLabScoresViewer
                 }
             }
 
-            if (s == null && nextEndingPart == null) s = "None";
+            if (s == null && nextEndingPart == null)
+            {
+                s = "None";
+                if(countdownTimerTask != null)
+                {
+                    if(countdownTimerTask.Status == TaskStatus.Running)
+                    {
+                        updateCountdown = false;
+                        countdownTimerTask.Dispose();
+                        if (!string.IsNullOrEmpty(lbl_partendtimer.Text)) lbl_partendtimer.Text = "not active";
+                    }
+                }
+            }
             else
             {
                 if (nextEndingPart.timeTillExpiration > TimeSpan.FromHours(48))
@@ -1029,26 +1056,44 @@ namespace MuhAimLabScoresViewer
                 }
                 else
                 {
-                    lbl_endson.Text = "ends in:";
-                    int hours = nextEndingPart.timeTillExpiration.Days > 0 ? nextEndingPart.timeTillExpiration.Hours + 24 : nextEndingPart.timeTillExpiration.Hours;
-                    lbl_partendtimer.Text = $"{hours}:{nextEndingPart.timeTillExpiration.Minutes}:{nextEndingPart.timeTillExpiration.Seconds}";
-
-                    //timer
-                    nextEndingPart_DateTime_forTimer = DateTime.Parse(nextEndingPart.part.Enddate);
-                    var countdownClock = Task.Run(() =>
+                    if(nextEndingPart.timeTillExpiration > TimeSpan.Zero)
                     {
-                        while (!updateCountdownTimer())
-                            Thread.Sleep(1000);
-                    });
+                        lbl_endson.Text = "ends in:";
+                        int hours = nextEndingPart.timeTillExpiration.Days > 0 ? nextEndingPart.timeTillExpiration.Hours + 24 : nextEndingPart.timeTillExpiration.Hours;
+                        lbl_partendtimer.Text = $"{hours}:{nextEndingPart.timeTillExpiration.Minutes}:{nextEndingPart.timeTillExpiration.Seconds}";
+
+                        //timer
+                        nextEndingPart_DateTime_forTimer = DateTime.Parse(nextEndingPart.part.Enddate);
+                        updateCountdown = true;
+                        countdownTimerTask = Task.Run(() =>
+                        {
+                            while (!updateCountdownTimer())
+                                Thread.Sleep(1000);
+                        });
+                    }
+                    else
+                    {                  
+                        updateCountdown = false;
+                        lbl_partendtimer.Text = "not active!";
+                    }
                 }
             }
             lbl_activepart.Text = s;
         }
         private bool updateCountdownTimer()
         {
+            if (!updateCountdown) return false;
+
             var isOver = false;
             this.Dispatcher.Invoke(() =>
             {
+                if (!updateCountdown)
+                {
+                    isOver = true;
+                    lbl_partendtimer.Text = "over";
+                    return;
+                }
+
                 var timeLeft = nextEndingPart_DateTime_forTimer - DateTime.UtcNow;
                 if (timeLeft > TimeSpan.Zero)
                 {
@@ -1059,7 +1104,11 @@ namespace MuhAimLabScoresViewer
                     lbl_partendtimer.Text = $"{hours}:{minutes}:{seconds}";
                     if (hoursTotal < 1) lbl_partendtimer.Foreground = Brushes.Red;
                 }
-                else isOver = true;
+                else
+                {
+                    isOver = true;
+                    updateCountdown = false;
+                }
             });
             return isOver;
         }
@@ -1067,11 +1116,23 @@ namespace MuhAimLabScoresViewer
         //klutchId finder
         private void buildklutchIdCall()
         {
-            string providedName = klutchIdFinder_Username.Text;
-            string providedScenario = klutchIdFinder_Scenario.Text;
+            if (!string.IsNullOrEmpty(currentSettings.SteamLibraryPath) && Directory.Exists(currentSettings.SteamLibraryPath))
+            {
+                string providedName = klutchIdFinder_Username.Text;
+                string providedScenario = klutchIdFinder_Scenario.Text;
 
-            string call = buildAPICallFromTaskName(providedScenario);
-            if (call != null) httpstuff(call).ContinueWith(item => findklutchId(item.Result.results, providedName));
+                string call = buildAPICallFromTaskName(providedScenario);
+                if (call != null)
+                {
+                    httpstuff(call).ContinueWith(item => findklutchId(item.Result.results, providedName));
+                }
+                else
+                {
+                    klutchIdFinderOutput.Visibility = Visibility.Visible;
+                    klutchIdFinderOutputText.Text = "no matching scenario found!";
+                }
+            }
+            else MessageBox.Show("You need to have entered SteamLibraryPath first!");
         }
         private void findklutchId(Result[] results, string playername)
         {
