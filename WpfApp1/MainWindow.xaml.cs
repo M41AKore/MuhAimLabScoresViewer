@@ -95,7 +95,6 @@ namespace MuhAimLabScoresViewer
         string outputPath;
         string h264 = "";
 
-
         public MainWindow()
         {
             if (Instance == null) Instance = this;
@@ -126,6 +125,9 @@ namespace MuhAimLabScoresViewer
             CompetitionsTab.Visibility = Visibility.Collapsed;
             CompetitionButton_BottomBorder.Visibility = Visibility.Visible;
 
+            tab_aimlabhistoryviewer.Visibility = Visibility.Collapsed;
+            AimLabHistoryButton_BottomBorder.Visibility = Visibility.Visible;
+
             SettingsTab.Visibility = Visibility.Collapsed;
             SettingsButton_BottomBorder.Visibility = Visibility.Visible;
 
@@ -143,10 +145,13 @@ namespace MuhAimLabScoresViewer
             CompetitionsTab.Visibility = Visibility.Collapsed;
             CompetitionButton_BottomBorder.Visibility = Visibility.Visible;
 
+            tab_aimlabhistoryviewer.Visibility = Visibility.Collapsed;
+            AimLabHistoryButton_BottomBorder.Visibility = Visibility.Visible;
+
             SettingsTab.Visibility = Visibility.Collapsed;
             SettingsButton_BottomBorder.Visibility = Visibility.Visible;
 
-            this.Height = 830;
+            this.Height = 840;
             this.Width = 800;
         }
         private void CompetitionButton_Click(object sender, RoutedEventArgs e)
@@ -160,11 +165,34 @@ namespace MuhAimLabScoresViewer
             CompetitionsTab.Visibility = Visibility.Visible;
             CompetitionButton_BottomBorder.Visibility = Visibility.Hidden;
 
+            tab_aimlabhistoryviewer.Visibility = Visibility.Collapsed;
+            AimLabHistoryButton_BottomBorder.Visibility = Visibility.Visible;
+
             SettingsTab.Visibility = Visibility.Collapsed;
             SettingsButton_BottomBorder.Visibility = Visibility.Visible;
 
-            this.Height = 575;
+            this.Height = 580;
             this.Width = 1125;
+        }
+        private void AimLabHistoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            tab_aimlabhistoryviewer.Visibility = Visibility.Visible;
+            AimLabHistoryButton_BottomBorder.Visibility = Visibility.Hidden;
+
+            TasksTab.Visibility = Visibility.Collapsed;
+            TaskButton_BottomBorder.Visibility = Visibility.Visible;
+
+            BenchmarksTab.Visibility = Visibility.Collapsed;
+            BenchmarkButton_BottomBorder.Visibility = Visibility.Visible;
+
+            CompetitionsTab.Visibility = Visibility.Collapsed;
+            CompetitionButton_BottomBorder.Visibility = Visibility.Visible;
+
+            SettingsTab.Visibility = Visibility.Collapsed;
+            SettingsButton_BottomBorder.Visibility = Visibility.Visible;
+
+            this.Height = 750;
+            this.Width = 1050;
         }
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
@@ -176,6 +204,9 @@ namespace MuhAimLabScoresViewer
 
             CompetitionsTab.Visibility = Visibility.Collapsed;
             CompetitionButton_BottomBorder.Visibility = Visibility.Visible;
+
+            tab_aimlabhistoryviewer.Visibility = Visibility.Collapsed;
+            AimLabHistoryButton_BottomBorder.Visibility = Visibility.Visible;
 
             SettingsTab.Visibility = Visibility.Visible;
             SettingsButton_BottomBorder.Visibility = Visibility.Hidden;
@@ -330,14 +361,21 @@ namespace MuhAimLabScoresViewer
                     currentBenchmarkFilePath = filepath;
                 }
             }
-
-            if (filename.ToLower().Contains("competition") || filename.ToLower().Contains("comp"))
+            else if (filename.ToLower().Contains("competition") || filename.ToLower().Contains("comp"))
             {
                 var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
                 if (newcomp != null)
                 {                
                     loadCompetitionToGUI(newcomp);
                     currentCompetitionFilePath = filepath;
+                }
+            }
+            else if (filename.ToLower().Contains("taskData") || filename.ToLower().Contains(".json"))
+            {
+                if (File.Exists(filepath))
+                {
+                    var item = AimLabHistoryViewer.getData(filepath);
+                    if (item != null) AimLabHistoryViewer.sortTasks(item.historyEntries);
                 }
             }
         }      
@@ -432,11 +470,14 @@ namespace MuhAimLabScoresViewer
         private async void launchUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
         {
             timer.Restart();
-
+            List<Task> tasks = new List<Task>();
             foreach (var call in calllist)
-            {
-                var t = Task.Run(async () => await getHighscore(call).ContinueWith(result => receiver(result))); // updateBenchmarkWithHighscore(result));
-            }
+                tasks.Add(Task.Run(async () => await getHighscore(call).ContinueWith(result => receiver(result)))); // updateBenchmarkWithHighscore(result));
+
+            //after updating all scores, calculate rank
+            await Task.WhenAll(tasks.ToArray()); 
+            Txt_BenchmarkRank.Text = Benchmark.calculateBenchmarkRank(benchStacky);
+            Txt_BenchmarkEnergy.Text = ((int)currentBenchmark.TotalEnergy).ToString();
         }
 
         //task leaderboard
@@ -483,9 +524,9 @@ namespace MuhAimLabScoresViewer
         {
             var headerDocky = new DockPanel()
             {
-                Margin = new Thickness(5, 2, 5, 2),
+                Margin = new Thickness(-15, 2, 5, 2),
                 //Background = Brushes.Red
-                Width = 380
+                Width = 380,
             };
 
             headerDocky.Children.Add(new TextBlock()
@@ -710,6 +751,7 @@ namespace MuhAimLabScoresViewer
                     {
                         Name = $"score_{i}_{j}",
                         Width = 100,
+                        TextAlignment = TextAlignment.Center,
                         HorizontalAlignment = HorizontalAlignment.Left,
                         Background = Brushes.White
                     });
@@ -1194,5 +1236,6 @@ namespace MuhAimLabScoresViewer
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             bmpScreenshot.Save($"D:/ballertest/Screenshot{timestamp}.png", System.Drawing.Imaging.ImageFormat.Png);
         }
+
     }
 }

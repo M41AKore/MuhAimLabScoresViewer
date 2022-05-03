@@ -16,42 +16,47 @@ namespace MuhAimLabScoresViewer
     public class Benchmark
     {
         [XmlElement("Title")]
-        public string Title { get; set; }   
+        public string Title { get; set; }
+
+        [XmlArray("Ranks")]
+        [XmlArrayItem("Rank")]
+        public Rank[] Ranks { get; set; }
 
         [XmlArray("Categories")]
         [XmlArrayItem("Category")]
         public Category[] Categories { get; set; }
 
-        public class RankEnergy
-        {
-            public string TaskName;
-            public int Score;
-            public string RankTitle;
-        }
+        public List<float> EnergyPerTask { get; set; }
+        public float TotalEnergy { get; set; }
 
         public static string calculateBenchmarkRank(StackPanel benchStacky)
         {
+            currentBenchmark.EnergyPerTask = new List<float>();
+
+            // collect scores and calculate energy
             for (int i = 0; i < currentBenchmark.Categories.Length; i++)
             {
                 for (int j = 0; j < currentBenchmark.Categories[i].Subcategories.Length; j++)
                 {
+                    List<float> countingEnergy = new List<float>();
+
                     for (int k = 0; k < currentBenchmark.Categories[i].Subcategories[j].Scenarios.Length; k++)
                     {
                         int score = int.Parse(findBenchmarkScoreFieldWithName($"score_{i}_{j}_{k}", benchStacky).Text);
-                        string rank = currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].RankRequirements.FirstOrDefault(rr => int.Parse(rr.RankScore) <= score).RankTitle;
-
-                        var energy = new RankEnergy()
-                        {
-                            TaskName = currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].Name,
-                            Score = score,
-                            RankTitle = rank
-                        };
-                        
+                        currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].calculateEnergy(score);
+                        countingEnergy.Add(currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].Energy);
                     }
+
+                    countingEnergy.Remove(countingEnergy.Min()); //best two scenarios count towards rank                  
+                    currentBenchmark.EnergyPerTask.AddRange(countingEnergy);
                 }
             }
 
-            return "divi- jk, noob";
+            //get final rank
+            currentBenchmark.TotalEnergy = currentBenchmark.EnergyPerTask.Sum();
+            string? rankTitle = currentBenchmark.Ranks.LastOrDefault(r => r.RankEnergyRequirement < currentBenchmark.TotalEnergy)?.Name;
+
+            return rankTitle != null ? rankTitle : "unranked";
         }
 
         public static void addBenchmarkGUIHeaders(StackPanel benchStacky)
@@ -72,7 +77,7 @@ namespace MuhAimLabScoresViewer
                 Width = 800,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Background = Brushes.LightGray,
-                
+                Margin = new Thickness(6,0,0,0), //to roughly match the offset created by borders of category and subcategory
             };
             //scenario
             headerdocky.Children.Add(new TextBlock()
@@ -95,27 +100,24 @@ namespace MuhAimLabScoresViewer
             });
             //ranks
             var ranksDocky = new DockPanel() { HorizontalAlignment = HorizontalAlignment.Left };
-            var someScen = currentBenchmark.Categories.First(c => c.Subcategories.Any()).Subcategories.First(s => s.Scenarios.Any()).Scenarios.FirstOrDefault();
-            if (someScen != null)
+            for (int i = 0; i < currentBenchmark.Ranks.Length; i++)
             {
-                for (int i = 0; i < someScen.RankRequirements.Length; i++)
+                ranksDocky.Children.Add(new TextBlock()
                 {
-                    ranksDocky.Children.Add(new TextBlock()
-                    {
-                        Name = $"rankheader_{someScen.RankRequirements[i].RankTitle}",
-                        Text = someScen.RankRequirements[i].RankTitle,
-                        Width = 100,
-                        TextAlignment = TextAlignment.Center,
-                        HorizontalAlignment = HorizontalAlignment.Left,
-                        FontWeight = FontWeights.Bold,
-                    });
-                }
+                    Name = $"rankheader_{currentBenchmark.Ranks[i].Name}",
+                    Text = currentBenchmark.Ranks[i].Name,
+                    Foreground = getColorFromHex(currentBenchmark.Ranks[i].Color),
+                    Width = 100,
+                    TextAlignment = TextAlignment.Center,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    FontWeight = FontWeights.Bold,
+                });
             }
             headerdocky.Children.Add(ranksDocky);
 
             benchStacky.Children.Add(new Border()
             {
-                Background = Brushes.LightBlue,
+                Background = Brushes.LightGray,
                 BorderBrush = Brushes.Black,
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(5),
@@ -180,12 +182,12 @@ namespace MuhAimLabScoresViewer
 
                         //rank requirements
                         var requirementsDocky = new DockPanel();
-                        foreach(var requirement in task.RankRequirements)
+                        for (int r = 0; r < task.RankScoreRequirements.Length; r++)
                         {
                             requirementsDocky.Children.Add(new TextBlock()
                             {
-                                Name = $"requirement_{i}_{j}_{k}_{requirement.RankTitle}",
-                                Text = requirement.RankScore,
+                                Name = $"requirement_{i}_{j}_{k}_{r}",
+                                Text = task.RankScoreRequirements[r].ToString(),
                                 Width = 100,
                                 HorizontalAlignment = HorizontalAlignment.Left,
                                 TextAlignment = TextAlignment.Center
@@ -271,6 +273,22 @@ namespace MuhAimLabScoresViewer
         }
     }
 
+    [XmlRoot("Rank")]
+    public class Rank
+    {
+        [XmlElement("Name")]
+        public string Name { get; set; }
+
+        [XmlElement("Color")]
+        public string Color { get; set; }
+
+        [XmlElement("TaskEnergyRequirement")]
+        public int TaskEnergyRequirement { get; set; }
+
+        [XmlElement("RankEnergyRequirement")]
+        public int RankEnergyRequirement { get; set; }
+    }
+
     [XmlRoot("Category")]
     public class Category
     {
@@ -302,18 +320,49 @@ namespace MuhAimLabScoresViewer
         [XmlElement("AlternativeName")]
         public string AlternativeName { get; set; }
 
-        [XmlArray("RankRequirements")]
-        [XmlArrayItem("RankRequirement")]
-        public RankRequirement[] RankRequirements { get; set; }
-    }
+        [XmlArray("RankScoreRequirements")]
+        [XmlArrayItem("RankScore")]
+        public int[] RankScoreRequirements { get; set; }
 
-    [XmlRoot("RankRequirement")]
-    public class RankRequirement
-    {
-        [XmlElement("RankTitle")]
-        public string RankTitle { get; set; }
 
-        [XmlElement("RankScore")]
-        public string RankScore { get; set; }
+        public float Energy { get; set; }
+
+        public void calculateEnergy(int score)
+        {
+            int? rankindex = getAchievedRankScoreIndex(score);
+            if(rankindex.HasValue)
+            {
+                float energy = getEnergyForScore(score, (int)rankindex);
+                Energy = energy;
+            }      
+        }
+
+        private int? getAchievedRankScoreIndex(int score)
+        {
+            for (int i = 0; i < RankScoreRequirements.Length; i++)
+                if (RankScoreRequirements[i] > score) return i - 1;
+
+            return null;
+        }
+
+        private float getEnergyForScore(int score, int rankindex)
+        {
+            float baseRankEnergy = currentBenchmark.Ranks[rankindex].TaskEnergyRequirement;
+
+            //score between two requirements
+            int maxScoreDifference = !(rankindex < RankScoreRequirements.Length) ? //if already top rank
+                RankScoreRequirements[rankindex] - RankScoreRequirements[rankindex-1] : //use energy per points of previous
+                RankScoreRequirements[rankindex + 1] - RankScoreRequirements[rankindex]; 
+
+            int maxEnergyDifference = !(rankindex < RankScoreRequirements.Length) ? //if already top rank
+                currentBenchmark.Ranks[rankindex].TaskEnergyRequirement - currentBenchmark.Ranks[rankindex-1].TaskEnergyRequirement : //use energy per points of previous
+                currentBenchmark.Ranks[rankindex + 1].TaskEnergyRequirement - currentBenchmark.Ranks[rankindex].TaskEnergyRequirement;
+
+            float energyPerPointsRatio = (float)maxEnergyDifference / maxScoreDifference;
+
+            int scoreDifference = score - RankScoreRequirements[rankindex]; //the player's score above the rank requirement score
+
+            return baseRankEnergy + (scoreDifference * energyPerPointsRatio);
+        }
     }
 }

@@ -48,7 +48,15 @@
                 <Rectangle Fill="#000" DockPanel.Dock="Right" Width="1"/>
                 <Rectangle Name="CompetitionButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
                 <Button Click="CompetitionButton_Click" Width="80" BorderThickness="0" Background="#fff">Competition</Button>
+            </DockPanel> 
+            <DockPanel Height="20" LastChildFill="True">
+                <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
+                <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
+                <Rectangle Fill="#000" DockPanel.Dock="Right" Width="1"/>
+                <Rectangle Name="AimLabHistoryButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
+                <Button Click="AimLabHistoryButton_Click" Width="80" BorderThickness="0" Background="#fff">AimLabHistory</Button>
             </DockPanel>
+            
             <DockPanel Height="20" LastChildFill="True" HorizontalAlignment="Right">
                 <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
                 <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
@@ -56,6 +64,7 @@
                 <Rectangle Name="SettingsButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
                 <Button Click="SettingsButton_Click" Width="40" BorderThickness="0" Background="#fff">⚙</Button>
             </DockPanel>
+
         </DockPanel>
 
         <StackPanel Grid.Row="1" Grid.Column="0" Name="stacky" Visibility="Visible">
@@ -85,19 +94,44 @@
             </StackPanel>
 
             <StackPanel Name="BenchmarksTab" Visibility="Collapsed">
-                <Label Margin="10" Name="DragDropInput_Benchmark" Width="150" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
+                <DockPanel>
+                    <Label Margin="10" Name="DragDropInput_Benchmark" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
                      Drop="DragDropInput_Benchmark_Drop">Drag 'n' Drop</Label>
-                <Button Click="Button_Click_1" Width="30" HorizontalAlignment="Right">
-                    <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
-                </Button>
+
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="30"/>
+                        </Grid.RowDefinitions>
+
+                        <Label Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" HorizontalContentAlignment="Left">Your Rank:</Label>
+                        <TextBlock Grid.Column="1" Grid.Row="0" Name="Txt_BenchmarkRank" VerticalAlignment="Center" TextAlignment="Left"></TextBlock>
+
+                        <Label Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" HorizontalContentAlignment="Left">Total Energy:</Label>
+                        <TextBlock Grid.Column="1" Grid.Row="1" Name="Txt_BenchmarkEnergy" VerticalAlignment="Center" TextAlignment="Left"></TextBlock>
+                    </Grid>
+
+                    <Button Click="Button_Click_1" Width="30" HorizontalAlignment="Right" Height="30" VerticalAlignment="Top">
+                        <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
+                    </Button>
+                </DockPanel>
+              
                 <StackPanel Name="benchStacky" Width="750"></StackPanel>
             </StackPanel>
 
             <StackPanel Name="CompetitionsTab" Visibility="Collapsed" Margin="10">
-                <Label Margin="10" Name="DragDropInput_Competition" Width="150" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
+                <DockPanel>
+                    <Label Margin="10" Name="DragDropInput_Competition" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
                      Drop="DragDropInput_Competition_Drop">Drag 'n' Drop</Label>
-                <Button Click="Button_Click_2" Width="30" HorizontalAlignment="Right">
-                    <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image></Button>
+                    <Button Click="Button_Click_2" Width="30" VerticalAlignment="Top" HorizontalAlignment="Right" Height="30">
+                        <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
+                    </Button>
+                </DockPanel>
+
                 <DockPanel>
                     <StackPanel>
                         <Label>Your results:</Label>
@@ -131,6 +165,49 @@
                     </StackPanel>
                 </Border>
 
+            </StackPanel>
+
+            <StackPanel Name="tab_aimlabhistoryviewer" Visibility="Collapsed">
+                <DockPanel>
+                    <Label Margin="10" Name="DragDropInput_AimLabHistory" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
+                     Drop="DragDropInput_Competition_Drop">Drag 'n' Drop</Label>
+                    <Label Name="GraphTitle" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center"></Label>
+                </DockPanel>
+                <DockPanel Name="contentDocky">
+                    <ScrollViewer Name="ScenariosScroller" HorizontalAlignment="Left" Width="250" Background="Transparent" VerticalAlignment="Top" 
+                              HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" Height="540">
+                        <StackPanel Margin="10,0,0,5" HorizontalAlignment="Left" Name="scenariosStacky"/>
+                    </ScrollViewer>
+                    
+                    <StackPanel Margin="0,-15,0,0" Name="graphStacky"></StackPanel>
+                    
+                    <StackPanel Name="Aside_Right" HorizontalAlignment="Right" Margin="10" Width="140">
+                        <Grid Name="InfoSectionGrid" Height="200">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                            </Grid.RowDefinitions>
+
+                            <Label Grid.Column="0" Grid.Row="0" VerticalAlignment="Center">Plays:</Label>
+                            <TextBlock Grid.Column="1" Grid.Row="0" VerticalAlignment="Center" Name="txt_Plays"></TextBlock>
+
+                            <Label Grid.Column="0" Grid.Row="1" VerticalAlignment="Center">Highscore:</Label>
+                            <TextBlock Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Name="txt_Highscore"></TextBlock>
+
+                            <Label Grid.Column="0" Grid.Row="2" VerticalAlignment="Center">Average:</Label>
+                            <TextBlock Grid.Column="1" Grid.Row="2" VerticalAlignment="Center" Name="txt_Average"></TextBlock>
+
+                            <Label Grid.Column="0" Grid.Row="3" VerticalAlignment="Center">Median:</Label>
+                            <TextBlock Grid.Column="1" Grid.Row="3" VerticalAlignment="Center" Name="txt_Median"></TextBlock>
+                        </Grid>
+                    </StackPanel>
+                </DockPanel>
             </StackPanel>
 
             <StackPanel Name="SettingsTab" Visibility="Collapsed">
@@ -187,7 +264,7 @@
                     <Button Click="Button_Click_6" Width="100">screenshot</Button>
                     </StackPanel>
                 </StackPanel>
-
+     
         </StackPanel>
 
         <DockPanel Grid.Column="0" Grid.Row="2" Name="ReplayBufferBar" Visibility="{Binding Path=BorderVisible}" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
