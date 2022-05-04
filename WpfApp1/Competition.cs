@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Xml;
 using System.Xml.Serialization;
+using static MuhAimLabScoresViewer.MainWindow;
 
 namespace MuhAimLabScoresViewer
 {
@@ -20,9 +22,80 @@ namespace MuhAimLabScoresViewer
 
         [XmlIgnore]
         public List<CompetitionContender> competitionContenders { get; set; }
-    
-    
-        
+
+
+        public static void buildCompContenders()
+        {
+            try
+            {
+                currentComp.competitionContenders = new List<CompetitionContender>();
+
+                for (int i = 0; i < currentComp.Parts.Length; i++)
+                    for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
+                        foreach (var player in currentComp.Parts[i].Scenarios[j].leaderboard.ResultsItem.results)
+                        {
+                            // limit eligible scores to within time frame
+                            var playdate = DateTime.UnixEpoch.AddSeconds(long.Parse(player.endedAt.Substring(0, player.endedAt.Length - 3)));
+                            playdate = playdate.AddHours(12); //UTC-12 to UTC
+                            var compPartEnddate = DateTime.Parse(currentComp.Parts[i].Enddate);
+                            var compStartDate = DateTime.Parse(currentComp.Parts[i].Startdate);
+
+                            if (playdate < compStartDate || playdate > compPartEnddate) continue;
+
+                            var existingPlayer = currentComp.competitionContenders.FirstOrDefault(c => c.klutchId == player.klutchId);
+                            if (existingPlayer == null) //create new
+                            {
+                                existingPlayer = new CompetitionContender()
+                                {
+                                    Name = player.username,
+                                    klutchId = player.klutchId,
+                                    mostRecentTimestamp = long.Parse(player.endedAt), //1 649 388 232 000
+                                };
+                                currentComp.competitionContenders.Add(existingPlayer);
+                            }
+
+                            //try to use newest name
+                            if (existingPlayer.Name != player.username)
+                                if (long.TryParse(player.endedAt, out long playTimestamp) && playTimestamp > existingPlayer.mostRecentTimestamp)
+                                {
+                                    existingPlayer.Name = player.username;
+                                    existingPlayer.mostRecentTimestamp = playTimestamp;
+                                }
+
+                            if (existingPlayer.partResults == null)
+                            {
+                                existingPlayer.partResults = new CompetitorCompetitionPart[currentComp.Parts.Length];
+                                for (int k = 0; k < currentComp.Parts.Length; k++)
+                                    existingPlayer.partResults[k] = new CompetitorCompetitionPart()
+                                    {
+                                        taskResults = new CompetitionTaskResult[currentComp.Parts[k].Scenarios.Length]
+                                    };
+                            }
+
+                            existingPlayer.partResults[i].taskResults[j] = new CompetitionTaskResult()
+                            {
+                                taskname = currentComp.Parts[i].Scenarios[j].Name,
+                                score = player.score
+                            };
+                        }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+            //calculate points
+            var allLeaderboards = new List<CompetitionTaskLeaderboard>();
+            foreach (var part in currentComp.Parts)
+                foreach (var scen in part.Scenarios)
+                {
+                    scen.leaderboard.calculateMeanTop20OfScenarios();
+                    allLeaderboards.Add(scen.leaderboard);
+                }
+
+            currentComp.competitionContenders.ForEach(c => c.calculateScorePoints(allLeaderboards)); //points results from top20 score deviation
+            currentComp.competitionContenders = currentComp.competitionContenders.OrderByDescending(c => c.totalPoints).ToList();
+        }
     }
 
     public class Part
@@ -36,7 +109,6 @@ namespace MuhAimLabScoresViewer
     public class Scenario
     {
         public string Name { get; set; }
-        //public string APICall { get; set; }
         //public string LaunchCommand { get; set; }
 
         [XmlIgnore]

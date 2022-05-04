@@ -10,28 +10,30 @@ namespace MuhAimLabScoresViewer
 {
     public class ViewModel : INotifyPropertyChanged
     {
-        private Visibility borderVisible = Visibility.Collapsed;
+        private Visibility _borderVisible = Visibility.Collapsed;
+        private bool _IsRecording = false;
+        private string _ReplayBufferSeconds = "90s";
+        private bool _onSaveReplayTakeScreenshot;
+        private string _ScreenshotsPath;
+        private string _ReplaysPath;
+
         public Visibility BorderVisible
         {
-            get => borderVisible;
+            get => _borderVisible;
             set {
-                borderVisible = value;
+                _borderVisible = value;
                 NotifyPropertyChanged("BorderVisible");
             }
-        }
-
-        private bool isRecording = false;
+        }      
         public bool IsRecording
         {
-            get => isRecording;
+            get => _IsRecording;
             set
             {
-                isRecording = value;
+                _IsRecording = value;
                 NotifyPropertyChanged("IsRecording");
             }
         }
-
-        private string _ReplayBufferSeconds = "90";
         public string ReplayBufferSeconds
         {
             get => _ReplayBufferSeconds;
@@ -41,6 +43,34 @@ namespace MuhAimLabScoresViewer
                 NotifyPropertyChanged("ReplayBufferSeconds");
             }
         }
+        public bool onSaveReplayTakeScreenshot
+        {
+            get => _onSaveReplayTakeScreenshot;
+            set
+            {
+                _onSaveReplayTakeScreenshot = value;
+                NotifyPropertyChanged("onSaveReplayTakeScreenshot");
+            }
+        }
+        public string ScreenshotsPath
+        {
+            get => _ScreenshotsPath;
+            set
+            {
+                _ScreenshotsPath = value;
+                NotifyPropertyChanged("ScreenshotsPath");
+            }
+        }
+        public string ReplaysPath
+        {
+            get => _ReplaysPath;
+            set
+            {
+                _ReplaysPath = value;
+                NotifyPropertyChanged("ReplaysPath");
+            }
+        }
+
 
         private void NotifyPropertyChanged(string info)
         {

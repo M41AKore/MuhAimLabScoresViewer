@@ -11,7 +11,8 @@
     <!-- MaxHeight="500" MaxWidth="700" -->
 
     <Window.Resources>
-        <local:BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <local:BooleanToVisibilityConverterCollapse x:Key="BoolToVisCollapse" />
+        <local:BooleanToVisibilityConverterHide x:Key="BoolToVisHide" />
         <local:StringToIntConverter x:Key="StringToInt"/>
     </Window.Resources>
 
@@ -125,7 +126,7 @@
 
             <StackPanel Name="CompetitionsTab" Visibility="Collapsed" Margin="10">
                 <DockPanel>
-                    <Label Margin="10" Name="DragDropInput_Competition" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
+                    <Label Name="DragDropInput_Competition" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
                      Drop="DragDropInput_Competition_Drop">Drag 'n' Drop</Label>
                     <Button Click="Button_Click_2" Width="30" VerticalAlignment="Top" HorizontalAlignment="Right" Height="30">
                         <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
@@ -219,6 +220,8 @@
                     <Grid.RowDefinitions>
                         <RowDefinition/>
                         <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
                     </Grid.RowDefinitions>
 
                     <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">SteamLibrary Path:</Label>
@@ -226,9 +229,16 @@
 
                     <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">klutchId:</Label>
                     <TextBox Grid.Row="1" Grid.Column="1" Name="klutchIdInput" LostFocus="klutchIdInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                    <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
+                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                    <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Screenshots Path:</Label>
+                    <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=ScreenshotsPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
                 </Grid>
                 
                 <StackPanel Margin="5,0,0,0">
+                    
                         <Label>Find klutchId:</Label>
                         <DockPanel>
                             <TextBox Name="klutchIdFinder_Username" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Username_GotFocus" LostFocus="klutchIdFinder_Username_LostFocus">Enter username</TextBox>
@@ -239,29 +249,40 @@
                                 <TextBox VerticalAlignment="Center" Name="klutchIdFinderOutputText" HorizontalAlignment="Left" Width="160"></TextBox>
                             </DockPanel>
                         </DockPanel>
-                        <StackPanel HorizontalAlignment="Left">
-                            <Label FontWeight="Bold">Screen Capture</Label>
-                            <DockPanel>
-                                <Label>Hotkey:</Label>
+
+                    <StackPanel HorizontalAlignment="Left">
+                        <Label FontWeight="Bold">Screen Capture</Label>
+                        <CheckBox HorizontalAlignment="Left" FlowDirection="RightToLeft" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked">
+                            <TextBlock FlowDirection="LeftToRight" Text="Enable:" />
+                        </CheckBox>
+                        <DockPanel>
+                                <Label>Save Replay Hotkey:</Label>
                                 <Button Name="recordHotkeySet" ToolTip="Click to set" Click="recordHotkeySet_Click">None</Button>
+                                <Label>Also take Screenshot:</Label>
+                                <CheckBox IsChecked="{Binding Path=onSaveReplayTakeScreenshot}"/>
                             </DockPanel>
                         <DockPanel>
-                            <CheckBox FlowDirection="RightToLeft" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked">
-                                <TextBlock FlowDirection="LeftToRight" Text="Enable:" />
-                            </CheckBox>
+                            
                         </DockPanel>
-                        <ComboBox SelectedValue="{Binding Path=ReplayBufferSeconds}">
-                            <ComboBoxItem>15s</ComboBoxItem>
-                            <ComboBoxItem>30s</ComboBoxItem>
-                            <ComboBoxItem>60s</ComboBoxItem>
-                            <ComboBoxItem>90s</ComboBoxItem>
-                            <ComboBoxItem>120s</ComboBoxItem>
-                        </ComboBox>
-                            <Button Name="recordStartButton" Click="Button_Click_3" Width="60">Record!</Button>
+                        <DockPanel HorizontalAlignment="Left">
+                            <Label HorizontalAlignment="Left">Buffer length:</Label>
+                            <ComboBox SelectedValue="{Binding Path=ReplayBufferSeconds}" Width="50" HorizontalAlignment="Left">
+                                <ComboBoxItem>15s</ComboBoxItem>
+                                <ComboBoxItem>30s</ComboBoxItem>
+                                <ComboBoxItem>60s</ComboBoxItem>
+                                <ComboBoxItem>90s</ComboBoxItem>
+                                <ComboBoxItem>120s</ComboBoxItem>
+                            </ComboBox>
+                        </DockPanel>
+                        <DockPanel HorizontalAlignment="Left">
+                            <Label HorizontalAlignment="Left">ReplayBuffer:</Label>
+                            <Button Name="recordStartButton" Click="Button_Click_3" Width="60">Start</Button>
                             <Button Name="recordStopButton" Click="Button_Click_4" Width="60" 
-                                Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVis}}">Stop!</Button>
+                                Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisCollapse}}">Stop</Button>
+                        </DockPanel>
+                            
                         </StackPanel>
-                    <Button Click="Button_Click_6" Width="100">screenshot</Button>
+                    <Button HorizontalAlignment="Left" Click="Button_Click_6" Width="100">screenshot</Button>
                     </StackPanel>
                 </StackPanel>
      
@@ -270,7 +291,7 @@
         <DockPanel Grid.Column="0" Grid.Row="2" Name="ReplayBufferBar" Visibility="{Binding Path=BorderVisible}" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
                 <Label VerticalContentAlignment="Center" VerticalAlignment="Center">Replaybuffer:</Label>
 
-                <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="100" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVis}}">
+                <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}">
                     <Button VerticalAlignment="Center" Background="Transparent">
                         <Image Source="Images/redsign.png" Height="15" Width="15">
                             <!--RenderTransformOrigin=".5,.5"
@@ -289,8 +310,9 @@
                         </Image.Triggers>-->
                         </Image>
                     </Button>
-                    <TextBlock Name="replayBufferStatus_Output" VerticalAlignment="Center">Recording...</TextBlock>
-                </DockPanel>
+                <TextBlock Name="replayBufferStatus_Output" VerticalAlignment="Center" Width="80">Recording...</TextBlock>
+            </DockPanel>
+            <TextBlock Name="replayBufferStatus_Output2" VerticalAlignment="Center" Width="250" HorizontalAlignment="Left"></TextBlock>
             </DockPanel>
     </Grid>
 </Window >
