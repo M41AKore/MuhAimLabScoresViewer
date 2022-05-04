@@ -252,13 +252,10 @@
 
                     <StackPanel HorizontalAlignment="Left">
                         <Label FontWeight="Bold">Screen Capture</Label>
-                        <CheckBox HorizontalAlignment="Left" FlowDirection="RightToLeft" Checked="CheckBox_Checked" Unchecked="CheckBox_Unchecked">
-                            <TextBlock FlowDirection="LeftToRight" Text="Enable:" />
-                        </CheckBox>
                         <DockPanel>
                                 <Label>Save Replay Hotkey:</Label>
-                                <Button Name="recordHotkeySet" ToolTip="Click to set" Click="recordHotkeySet_Click">None</Button>
-                                <Label>Also take Screenshot:</Label>
+                                <Button Name="recordHotkeySet" ToolTip="Click to set" Click="recordHotkeySet_Click" Width="50">None</Button>
+                                <Label Margin="10,0,0,0">Also take Screenshot:</Label>
                                 <CheckBox IsChecked="{Binding Path=onSaveReplayTakeScreenshot}"/>
                             </DockPanel>
                         <DockPanel>
@@ -276,19 +273,17 @@
                         </DockPanel>
                         <DockPanel HorizontalAlignment="Left">
                             <Label HorizontalAlignment="Left">ReplayBuffer:</Label>
-                            <Button Name="recordStartButton" Click="Button_Click_3" Width="60">Start</Button>
-                            <Button Name="recordStopButton" Click="Button_Click_4" Width="60" 
-                                Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisCollapse}}">Stop</Button>
+                            <Button Name="recordStartButton" Click="RecordingButton_Click" Width="60" Height="25">Start</Button>
                         </DockPanel>
                             
                         </StackPanel>
-                    <Button HorizontalAlignment="Left" Click="Button_Click_6" Width="100">screenshot</Button>
+                    <!--<Button HorizontalAlignment="Left" Click="Button_Click_6" Width="100">screenshot</Button>-->
                     </StackPanel>
                 </StackPanel>
      
         </StackPanel>
 
-        <DockPanel Grid.Column="0" Grid.Row="2" Name="ReplayBufferBar" Visibility="{Binding Path=BorderVisible}" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+        <DockPanel Grid.Column="0" Grid.Row="2" Name="ReplayBufferBar" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
                 <Label VerticalContentAlignment="Center" VerticalAlignment="Center">Replaybuffer:</Label>
 
                 <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}">

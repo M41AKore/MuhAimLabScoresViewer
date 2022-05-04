@@ -112,7 +112,9 @@ namespace MuhAimLabScoresViewer
             this.DataContext = new ViewModel();
             viewModel = this.DataContext as ViewModel;
 
-            currentSettings = loadSettings();           
+            Logger.setup();
+
+            loadSettings();
         }
 
         private void TaskButton_Click(object sender, RoutedEventArgs e)
@@ -267,9 +269,12 @@ namespace MuhAimLabScoresViewer
             var tb = sender as System.Windows.Controls.TextBox;
             if (tb != null && string.IsNullOrEmpty(tb.Text)) tb.Text = "Enter username";
         }
-        private void Button_Click_4(object sender, RoutedEventArgs e) => stopRecording();
         private void Button_Click_5(object sender, RoutedEventArgs e) => buildklutchIdCall();
-        private void Button_Click_3(object sender, RoutedEventArgs e) => startRecording();
+        private void RecordingButton_Click(object sender, RoutedEventArgs e)
+        {
+            if(viewModel.IsRecording) stopRecording();
+            else startRecording();
+        }
         private void recordHotkeySet_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
@@ -288,28 +293,30 @@ namespace MuhAimLabScoresViewer
                 btn.Content = e.Key.ToString();
             }
 
-            if(currentSettings.RecordingHotKey != null) hook.UnregisterHotkeys(); //gets rid of previous hotkey
+            if (currentSettings.RecordingHotKey != null) hook.UnregisterHotkeys(); //gets rid of previous hotkey
             currentSettings.RecordingHotKey = (Keys)KeyInterop.VirtualKeyFromKey(e.Key);
             registerRecordingHotkey(currentSettings);
-        }     
-        private void CheckBox_Checked(object sender, RoutedEventArgs e) => viewModel.BorderVisible = Visibility.Visible;
-        private void CheckBox_Unchecked(object sender, RoutedEventArgs e) => viewModel.BorderVisible = Visibility.Collapsed;
-        private void Button_Click_6(object sender, RoutedEventArgs e) => takeScreenshot();
+        }
         private void Window_Closed(object sender, EventArgs e)
         {
             SaveSettings();
         }
 
-        private Settings loadSettings()
+        private void loadSettings()
         {
-            if (!File.Exists("./settings.xml")) File.WriteAllText("./settings.xml", "<Settings><SteamLibraryPath></SteamLibraryPath><klutchId></klutchId></Settings>");
+            if (!File.Exists("./settings.xml"))
+            {
+                //File.WriteAllText("./settings.xml", "<Settings><SteamLibraryPath></SteamLibraryPath><klutchId></klutchId></Settings>");
+                XmlSerializer.serializeToXml<Settings>(new Settings(), settingsPath);
+            }
 
             var settings = XmlSerializer.deserializeXml<Settings>("./settings.xml");
             if (settings != null)
             {
+                currentSettings = settings;
                 SteamLibraryInput.Text = settings.SteamLibraryPath;
                 klutchIdInput.Text = settings.klutchId;
-                if(settings.RecordingHotKey != null) registerRecordingHotkey(settings);
+                if (settings.RecordingHotKey != null) registerRecordingHotkey(settings);
                 recordHotkeySet.Content = settings.RecordingHotKey.ToString();
                 viewModel.onSaveReplayTakeScreenshot = settings.alsoTakeScreenshot;
                 viewModel.ScreenshotsPath = settings.ScreenshotSavePath;
@@ -318,8 +325,6 @@ namespace MuhAimLabScoresViewer
                 if (settings.lastBenchmarkFile != null && File.Exists(settings.lastBenchmarkFile)) HandleFile(settings.lastBenchmarkFile);
                 if (settings.lastCompetitionFile != null && File.Exists(settings.lastCompetitionFile)) HandleFile(settings.lastCompetitionFile);
             }
-            
-            return settings;
         }
         private void SaveSettings()
         {
@@ -334,7 +339,7 @@ namespace MuhAimLabScoresViewer
         private void registerRecordingHotkey(Settings settings)
         {
             // register the event that is fired after the key press.
-            if(!registeredHotkey) hook.KeyPressed += new EventHandler<KeyPressedEventArgs>(hook_KeyPressed);
+            if (!registeredHotkey) hook.KeyPressed += new EventHandler<KeyPressedEventArgs>(hook_KeyPressed);
             // register the control + alt + F12 combination as hot key.
             hook.RegisterHotKey(ModifierKeys.None, (Keys)settings.RecordingHotKey); //ModifierKeys.Control | ModifierKeys.Alt, Keys.F12
             registeredHotkey = true;
@@ -359,7 +364,7 @@ namespace MuhAimLabScoresViewer
             {
                 var newbench = XmlSerializer.deserializeXml<Benchmark>(filepath);
                 if (newbench != null)
-                {                  
+                {
                     currentBenchmark = newbench;
                     Benchmark.addBenchmarkGUIHeaders(benchStacky);
                     Benchmark.addBenchmarkScores(benchStacky);
@@ -371,7 +376,7 @@ namespace MuhAimLabScoresViewer
             {
                 var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
                 if (newcomp != null)
-                {                
+                {
                     loadCompetitionToGUI(newcomp);
                     currentCompetitionFilePath = filepath;
                 }
@@ -384,7 +389,7 @@ namespace MuhAimLabScoresViewer
                     if (item != null) AimLabHistoryViewer.sortTasks(item.historyEntries);
                 }
             }
-        }      
+        }
         public static string buildAPICallFromTaskName(string task)
         {
             if (!Directory.Exists(currentSettings.SteamLibraryPath)) return null;
@@ -473,7 +478,7 @@ namespace MuhAimLabScoresViewer
                     Convert.ToByte(hexaColor.Substring(3, 2), 16),
                     Convert.ToByte(hexaColor.Substring(5, 2), 16)));
         }
-        private async void launchUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
+        private async void launchBenchmarkUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
         {
             timer.Restart();
             List<Task> tasks = new List<Task>();
@@ -481,9 +486,19 @@ namespace MuhAimLabScoresViewer
                 tasks.Add(Task.Run(async () => await APIStuff.getHighscore(call).ContinueWith(result => receiver(result)))); // updateBenchmarkWithHighscore(result));
 
             //after updating all scores, calculate rank
-            await Task.WhenAll(tasks.ToArray()); 
+            await Task.WhenAll(tasks.ToArray());
             Txt_BenchmarkRank.Text = Benchmark.calculateBenchmarkRank(benchStacky);
             Txt_BenchmarkEnergy.Text = ((int)currentBenchmark.TotalEnergy).ToString();
+        }
+        private async void launchCompetitionUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
+        {
+            timer.Restart();
+            List<Task> tasks = new List<Task>();
+            foreach (var call in calllist)
+                tasks.Add(Task.Run(async () => await APIStuff.getHighscore(call).ContinueWith(result => receiver(result)))); // updateBenchmarkWithHighscore(result));
+
+            await Task.WhenAll(tasks.ToArray());
+            //
         }
 
         //task leaderboard
@@ -666,9 +681,10 @@ namespace MuhAimLabScoresViewer
 
             Trace.WriteLine("time for building datagrids and calls: " + timer.ElapsedMilliseconds);
 
-            if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchUpdates(calllist, updateBenchmarkWithHighscore);
+            if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchBenchmarkUpdates(calllist, updateBenchmarkWithHighscore);
             else MessageBox.Show("please set 'klutchId' in Settings!");
-        }      
+        }
+
         private string calculateUIScoreItemName(Task<HighscoreUpdateCall> call)
         {
             for (int i = 0; i < currentBenchmark.Categories.Length; i++)
@@ -750,7 +766,7 @@ namespace MuhAimLabScoresViewer
                 });
             }
 
-            if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchUpdates(calllist, updateCompetitionUIWithHighscore);
+            if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchCompetitionUpdates(calllist, updateCompetitionUIWithHighscore);
             else MessageBox.Show("please set 'klutchId' in Settings!");
 
             buildCompLeaderboard(calllist);
@@ -761,8 +777,8 @@ namespace MuhAimLabScoresViewer
 
             this.Dispatcher.Invoke(() =>
             {
-                //get id name
-                string textblockID = "";
+            //get id name
+            string textblockID = "";
 
                 for (int i = 0; i < currentComp.Parts.Length; i++)
                     for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
@@ -770,8 +786,8 @@ namespace MuhAimLabScoresViewer
                             textblockID = $"score_{i}_{j}";
 
 
-                //find texblock with matching ID
-                var field = findPersonalCompetitionStatsScoreField(textblockID);
+            //find texblock with matching ID
+            var field = findPersonalCompetitionStatsScoreField(textblockID);
                 if (field != null) field.Text = call.Result.highscore;
 
                 return;
@@ -817,7 +833,7 @@ namespace MuhAimLabScoresViewer
             Task.WaitAll(tasks.ToArray());
             Competition.buildCompContenders();
             buildCompLeaderboardToGUI();
-        }     
+        }
         private void buildCompLeaderboardToGUI()
         {
             Competition_Title.Text = currentComp.Title;
@@ -827,7 +843,7 @@ namespace MuhAimLabScoresViewer
             addOtherCompetitionGUI(CompInfoDocky); //timer
             addCompetitionLeaderboardGUIHeaders(CompInfoDocky); // headers
             addCompetitionLeaderboardGUIPlayerData(myDocky); // playerdata
-        }    
+        }
         private void addCompetitionLeaderboardGUIPlayerData(DockPanel boardDocky)
         {
             for (int i = 0; i < currentComp.competitionContenders.Count; i++)
@@ -953,7 +969,7 @@ namespace MuhAimLabScoresViewer
 
             boardDocky.Children.Add(headerstacky);
         }
-           
+
         //other competition info
         private void addOtherCompetitionGUI(DockPanel boardDocky)
         {
@@ -1050,60 +1066,40 @@ namespace MuhAimLabScoresViewer
         }
 
         //nvenc screen recorder
+        ScreenCaptureNvenc recorder = null;
         private void startRecording()
         {
-            var proc = new ProcessStartInfo();
-            proc.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.FileName = @"C:\Users\Kore\Downloads\NvEncSharp-master\src\NvEncSharp.Sample.ScreenCapture\bin\Debug\NvEncSharp.Sample.ScreenCapture.exe";
-
             outputFileName = $"Replay_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}";
-            if(viewModel.ReplaysPath != currentSettings.ReplaySavePath) currentSettings.ReplaySavePath = viewModel.ReplaysPath; //make sure it's up to date
+            if (viewModel.ReplaysPath != currentSettings.ReplaySavePath) currentSettings.ReplaySavePath = viewModel.ReplaysPath; //make sure it's up to date
             outputPath = currentSettings.ReplaySavePath != null ? currentSettings.ReplaySavePath : "./"; //if not set - save to app directory
             h264 = System.IO.Path.Combine(outputPath, outputFileName + ".264");
 
             var parts = viewModel.ReplayBufferSeconds.Split(' ');
             string seconds = parts.Length > 1 ? parts.Last().Substring(0, parts.Last().Length - 1) : parts[0].Substring(0, parts[0].Length - 1);
-            var args = $"-d \\\\.\\DISPLAY1 -o {outputPath} -file {outputFileName} -r 24 -f 60 -s {seconds}";
-            proc.Arguments = args;
-            recorderProcess = Process.Start(proc);
 
-            if (recorderProcess != null)
+            var args = $"-d \\\\.\\DISPLAY1 -o {outputPath} -file {outputFileName} -r 24 -f 60 -s {seconds}";
+            var argsArray = args.Split(' ');
+            recorder = new ScreenCaptureNvenc(argsArray);
+            if (recorder != null)
             {
                 viewModel.IsRecording = true;
-
-                recordStartButton.Visibility = Visibility.Collapsed;
                 replayBufferStatus_Output.Text = "Recording...";
                 Trace.WriteLine("recording started!");
+                Logger.log("recording started!");
             }
             /*string output = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".mp4");
             var snippet = FFmpeg.Conversions.FromSnippet.Convert(Resources.MkvWithAudio, output);
             IConversionResult result = await snippet.Start();*/
+
+            recordStartButton.Content = "Stop";
         }
         private void stopRecording()
         {
-            if (recorderProcess != null) recorderProcess.CloseMainWindow();
-            Trace.WriteLine("recording stopped!");
-            replayBufferStatus_Output.Text = "Saving...";
-
+            if (recorder != null) recorder.stop();           
             viewModel.IsRecording = false;
-            recordStartButton.Visibility = Visibility.Visible;
-
-            Thread.Sleep(1000); // ehm...
-
-            Console.WriteLine("converting to mp4...");
-            ProcessStartInfo proc = new ProcessStartInfo();
-            proc.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.FileName = @"C:\windows\system32\cmd.exe";
-            mp4 = h264.Substring(0, h264.Length - 3) + "mp4";
-            proc.Arguments = $"/c D:\\ballertest\\ffmpeg-master\\bin\\ffmpeg.exe -y -i {h264} -c copy {mp4}"; //-loglevel quiet -nostats
-            var p = Process.Start(proc);
-            //p.Exited += P_Exited; ;
-            Trace.WriteLine("wrapped in mp4 container!");
-        }
-        private void P_Exited(object? sender, EventArgs e)
-        {
-            File.Delete(System.IO.Path.Combine(outputPath, $"{outputFileName}.264"));
-            Console.WriteLine("deleted h264 file!");
+            recordStartButton.Content = "Start";
+            Trace.WriteLine("recording stopped!");
+            Logger.log("stopped recording!");
         }
 
         private void saveReplay()
@@ -1112,11 +1108,11 @@ namespace MuhAimLabScoresViewer
             outputPath = currentSettings.ReplaySavePath != null ? currentSettings.ReplaySavePath : "./";
             h264 = System.IO.Path.Combine(outputPath, outputFileName + ".264");*/
 
-            // TODO
+            recorder.saveReplay();
 
             Task.Run(() =>
             {
-                this.Dispatcher.Invoke(() => replayBufferStatus_Output2.Text = "Saved Replay to " + mp4);
+                this.Dispatcher.Invoke(() => replayBufferStatus_Output2.Text = "Saving Replay to " + mp4);
                 Thread.Sleep(3000);
                 this.Dispatcher.Invoke(() => replayBufferStatus_Output2.Text = "");
             });
@@ -1129,7 +1125,7 @@ namespace MuhAimLabScoresViewer
             gfxScreenshot.CopyFromScreen(Screen.PrimaryScreen.Bounds.X, Screen.PrimaryScreen.Bounds.Y, 0, 0, Screen.PrimaryScreen.Bounds.Size, CopyPixelOperation.SourceCopy);
 
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-            if(viewModel.ScreenshotsPath != currentSettings.ScreenshotSavePath) currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
+            if (viewModel.ScreenshotsPath != currentSettings.ScreenshotSavePath) currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
             string savePath = currentSettings.ScreenshotSavePath != null ? currentSettings.ScreenshotSavePath : ".";
             string screenshotpath = $"{savePath}/Screenshot{timestamp}.png";
             bmpScreenshot.Save(screenshotpath, System.Drawing.Imaging.ImageFormat.Png);

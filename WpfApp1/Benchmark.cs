@@ -329,20 +329,27 @@ namespace MuhAimLabScoresViewer
 
         public void calculateEnergy(int score)
         {
-            int? rankindex = getAchievedRankScoreIndex(score);
-            if(rankindex.HasValue)
+            try
             {
-                float energy = getEnergyForScore(score, (int)rankindex);
-                Energy = energy;
-            }      
+                int rankindex = getAchievedRankScoreIndex(score); // returns -1 if unranked (Energy for that is TODO)
+                if (rankindex >= 0)
+                {
+                    float energy = getEnergyForScore(score, (int)rankindex);
+                    Energy = energy;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);    
+            }
         }
 
-        private int? getAchievedRankScoreIndex(int score)
+        private int getAchievedRankScoreIndex(int score)
         {
             for (int i = 0; i < RankScoreRequirements.Length; i++)
                 if (RankScoreRequirements[i] > score) return i - 1;
 
-            return null;
+            return -1;
         }
 
         private float getEnergyForScore(int score, int rankindex)

@@ -41,6 +41,8 @@ namespace MuhAimLabScoresViewer
 
         public static async Task<HighscoreUpdateCall> getHighscore(HighscoreUpdateCall call)
         {
+            if (string.IsNullOrEmpty(call.apicall)) return call;
+
             using (HttpClient client = new HttpClient())
             {
                 try

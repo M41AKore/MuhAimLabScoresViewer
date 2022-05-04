@@ -5,6 +5,7 @@
     <TargetFramework>net6.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,10 +24,14 @@
 
   <ItemGroup>
     <PackageReference Include="Json.Net" Version="1.0.33" />
+    <PackageReference Include="Lennox.NvEncSharp" Version="2.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="OxyPlot.Wpf" Version="2.1.0" />
+    <PackageReference Include="SharpDX.Direct3D11" Version="4.2.0" />
+    <PackageReference Include="SharpDX.DXGI" Version="4.2.0" />
     <PackageReference Include="Simplify.Windows.Forms" Version="1.1.2" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
+    <PackageReference Include="Xabe.FFmpeg" Version="5.1.0" />
   </ItemGroup>
 
   <ItemGroup>
