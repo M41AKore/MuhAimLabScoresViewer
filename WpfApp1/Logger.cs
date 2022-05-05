@@ -17,7 +17,7 @@ namespace MuhAimLabScoresViewer
         {
             Directory.CreateDirectory(logOutputPath);
 
-            string date = DateTime.Now.ToString("yyyy-MM-dd_hh-mm-ss");
+            string date = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string newlogFile = Path.Combine(logOutputPath, $"Log_{date}.txt");
 
             try

@@ -71,6 +71,18 @@ namespace MuhAimLabScoresViewer
             }
         }
 
+        private List<string> _ReplayBufferSecondsOptions;
+
+        public List<string> ReplayBufferSecondsOptions
+        {
+            get => _ReplayBufferSecondsOptions;
+            set
+            {
+                _ReplayBufferSecondsOptions = value;
+                NotifyPropertyChanged("ReplayBufferSecondsOptions");
+            }
+        }
+
 
         private void NotifyPropertyChanged(string info)
         {
@@ -78,5 +90,15 @@ namespace MuhAimLabScoresViewer
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
+
+        public ViewModel()
+        {
+            ReplayBufferSecondsOptions = new List<string>()
+            {
+                "60s",
+                "90s",
+                "120s",
+            };
+        }
     }
 }

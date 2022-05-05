@@ -196,18 +196,18 @@ namespace MuhAimLabScoresViewer
             MainWindow.Instance.graphStacky.Children.Add(pv);
 
             //other info section
-            var orderedPlays = scenario.Plays.OrderByDescending(p => int.Parse(p.Score)).ToArray();
+            var orderedPlays = scenario.Plays.OrderBy(p => int.Parse(p.Score)).ToArray();
 
             MainWindow.Instance.txt_Plays.Text = scenario.Plays.Count.ToString();
-            MainWindow.Instance.txt_Highscore.Text = orderedPlays[0].Score.ToString();
+            MainWindow.Instance.txt_Highscore.Text = orderedPlays.Last().Score.ToString();
             MainWindow.Instance.txt_Average.Text = scenario.Plays.Average(p => int.Parse(p.Score)).ToString("#.##");
 
             //median
             if (scenario.Plays.Count % 2 == 0) //if even, calculate median at half
             {
-                int halfPlusOne = scenario.Plays.Count / 2;
-                int halfMinusOne = halfPlusOne - 1;
-                double median = halfPlusOne + halfMinusOne / 2;
+                int halfPlusOne = int.Parse(orderedPlays[scenario.Plays.Count / 2].Score);
+                int halfMinusOne = int.Parse(orderedPlays[(scenario.Plays.Count / 2) - 1].Score);
+                double median = ((double)(halfPlusOne + halfMinusOne) / 2);
                 MainWindow.Instance.txt_Median.Text = median.ToString();
             }
             else

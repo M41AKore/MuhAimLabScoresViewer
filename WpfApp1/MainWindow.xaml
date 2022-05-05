@@ -212,73 +212,75 @@
             </StackPanel>
 
             <StackPanel Name="SettingsTab" Visibility="Collapsed">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="120"/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
+                <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
 
-                    <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">SteamLibrary Path:</Label>
-                    <TextBox Grid.Row="0" Grid.Column="1" Name="SteamLibraryInput" LostFocus="SteamLibraryInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                        <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">SteamLibrary Path:</Label>
+                        <TextBox Grid.Row="0" Grid.Column="1" Name="SteamLibraryInput" LostFocus="SteamLibraryInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                    <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">klutchId:</Label>
-                    <TextBox Grid.Row="1" Grid.Column="1" Name="klutchIdInput" LostFocus="klutchIdInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                        <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">klutchId:</Label>
+                        <TextBox Grid.Row="1" Grid.Column="1" Name="klutchIdInput" LostFocus="klutchIdInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                    <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
-                    <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                        <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                    <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Screenshots Path:</Label>
-                    <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=ScreenshotsPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
-                </Grid>
-                
-                <StackPanel Margin="5,0,0,0">
-                    
-                        <Label>Find klutchId:</Label>
-                        <DockPanel>
-                            <TextBox Name="klutchIdFinder_Username" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Username_GotFocus" LostFocus="klutchIdFinder_Username_LostFocus">Enter username</TextBox>
-                            <TextBox Name="klutchIdFinder_Scenario" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Scenario_GotFocus" LostFocus="klutchIdFinder_Scenario_LostFocus">Enter scenario</TextBox>
-                            <Button Click="Button_Click_5" Height="20">Find</Button>
-                            <DockPanel Margin="5,0,0,0" Name="klutchIdFinderOutput" Visibility="Hidden">
-                                <Label>Result:</Label>
-                                <TextBox VerticalAlignment="Center" Name="klutchIdFinderOutputText" HorizontalAlignment="Left" Width="160"></TextBox>
+                        <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Screenshots Path:</Label>
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=ScreenshotsPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                    </Grid>
+                </Border>
+
+                    <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                        <StackPanel>
+                            <Label>Find klutchId:</Label>
+                            <DockPanel>
+                                <TextBox Margin="5,0,0,0" Name="klutchIdFinder_Username" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Username_GotFocus" LostFocus="klutchIdFinder_Username_LostFocus">Enter username</TextBox>
+                                <TextBox Margin="5,0,0,0" Name="klutchIdFinder_Scenario" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Scenario_GotFocus" LostFocus="klutchIdFinder_Scenario_LostFocus">Enter scenario</TextBox>
+                                <Button Margin="5,0,0,0" Click="Button_Click_5" Height="20">Find</Button>
+                                <DockPanel Margin="5,0,0,0" Name="klutchIdFinderOutput" Visibility="Hidden">
+                                    <Label>Result:</Label>
+                                    <TextBox VerticalAlignment="Center" Name="klutchIdFinderOutputText" HorizontalAlignment="Left" Width="160"></TextBox>
+                                </DockPanel>
                             </DockPanel>
-                        </DockPanel>
-
-                    <StackPanel HorizontalAlignment="Left">
-                        <Label FontWeight="Bold">Screen Capture</Label>
-                        <DockPanel>
-                                <Label>Save Replay Hotkey:</Label>
-                                <Button Name="recordHotkeySet" ToolTip="Click to set" Click="recordHotkeySet_Click" Width="50">None</Button>
-                                <Label Margin="10,0,0,0">Also take Screenshot:</Label>
-                                <CheckBox IsChecked="{Binding Path=onSaveReplayTakeScreenshot}"/>
-                            </DockPanel>
-                        <DockPanel>
-                            
-                        </DockPanel>
-                        <DockPanel HorizontalAlignment="Left">
-                            <Label HorizontalAlignment="Left">Buffer length:</Label>
-                            <ComboBox SelectedValue="{Binding Path=ReplayBufferSeconds}" Width="50" HorizontalAlignment="Left">
-                                <ComboBoxItem>15s</ComboBoxItem>
-                                <ComboBoxItem>30s</ComboBoxItem>
-                                <ComboBoxItem>60s</ComboBoxItem>
-                                <ComboBoxItem>90s</ComboBoxItem>
-                                <ComboBoxItem>120s</ComboBoxItem>
-                            </ComboBox>
-                        </DockPanel>
-                        <DockPanel HorizontalAlignment="Left">
-                            <Label HorizontalAlignment="Left">ReplayBuffer:</Label>
-                            <Button Name="recordStartButton" Click="RecordingButton_Click" Width="60" Height="25">Start</Button>
-                        </DockPanel>
-                            
                         </StackPanel>
+                    </Border>
+
+
+                <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                        <StackPanel HorizontalAlignment="Left">
+                            <Label FontWeight="Bold">Screen Capture</Label>
+                            <DockPanel>
+                                <Label>Save Replay Hotkey:</Label>
+                                <Button Name="recordHotkeySet" ToolTip="Click to set" Click="recordHotkeySet_Click" Width="50" Height="20">None</Button>
+                                <Label Margin="10,0,0,0">Also take Screenshot:</Label>
+                                <CheckBox IsChecked="{Binding Path=onSaveReplayTakeScreenshot}" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <DockPanel>
+
+                            </DockPanel>
+                            <DockPanel HorizontalAlignment="Left">
+                                <Label HorizontalAlignment="Left">Buffer length:</Label>
+                                <ComboBox Width="60" HorizontalAlignment="Left" Height="20"
+                                ItemsSource="{Binding Path=ReplayBufferSecondsOptions}" SelectedValue="{Binding Path=ReplayBufferSeconds, UpdateSourceTrigger=PropertyChanged}" />
+                            </DockPanel>
+                            <DockPanel HorizontalAlignment="Left">
+                                <Label HorizontalAlignment="Left">ReplayBuffer:</Label>
+                                <Button Name="recordStartButton" Click="RecordingButton_Click" Width="60" Height="20">Start</Button>
+                            </DockPanel>
+
+                        </StackPanel>
+                    </Border>
+                    
                     <!--<Button HorizontalAlignment="Left" Click="Button_Click_6" Width="100">screenshot</Button>-->
-                    </StackPanel>
                 </StackPanel>
      
         </StackPanel>

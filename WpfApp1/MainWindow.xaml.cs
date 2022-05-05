@@ -321,6 +321,7 @@ namespace MuhAimLabScoresViewer
                 viewModel.onSaveReplayTakeScreenshot = settings.alsoTakeScreenshot;
                 viewModel.ScreenshotsPath = settings.ScreenshotSavePath;
                 viewModel.ReplaysPath = settings.ReplaySavePath;
+                viewModel.ReplayBufferSeconds = settings.BufferSeconds;
 
                 if (settings.lastBenchmarkFile != null && File.Exists(settings.lastBenchmarkFile)) HandleFile(settings.lastBenchmarkFile);
                 if (settings.lastCompetitionFile != null && File.Exists(settings.lastCompetitionFile)) HandleFile(settings.lastCompetitionFile);
@@ -331,6 +332,7 @@ namespace MuhAimLabScoresViewer
             currentSettings.alsoTakeScreenshot = viewModel.onSaveReplayTakeScreenshot;
             currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
             currentSettings.ReplaySavePath = viewModel.ReplaysPath;
+            currentSettings.BufferSeconds = viewModel.ReplayBufferSeconds;
 
             if (currentBenchmarkFilePath != null && File.Exists(currentBenchmarkFilePath)) currentSettings.lastBenchmarkFile = currentBenchmarkFilePath;
             if (currentCompetitionFilePath != null && File.Exists(currentCompetitionFilePath)) currentSettings.lastCompetitionFile = currentCompetitionFilePath;

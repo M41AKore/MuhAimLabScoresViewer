@@ -42,7 +42,7 @@ namespace MuhAimLabScoresViewer
 
         public ScreenCaptureNvenc(string[] args)
         {
-            if (args.Length < 1) args = new string[] { "-d", "\\\\.\\DISPLAY1", "-o", " D:/ballertest/", "-r", "24", "-f", "60", "-s", "30", "-file", "test" };
+            //if (args.Length < 1) args = new string[] { "-d", "\\\\.\\DISPLAY1", "-o", " D:/ballertest/", "-r", "24", "-f", "60", "-s", "30", "-file", "test" };
             var pArgs = new ProgramArguments(args);
 
             recordingTask = Task.Run(() =>

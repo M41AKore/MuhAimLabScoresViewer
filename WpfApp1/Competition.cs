@@ -24,6 +24,14 @@ namespace MuhAimLabScoresViewer
         public List<CompetitionContender> competitionContenders { get; set; }
 
 
+        public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
+        {
+            // Unix timestamp is seconds past epoch
+            System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+            dtDateTime = dtDateTime.AddSeconds(unixTimeStamp).ToLocalTime();
+            return dtDateTime;
+        }
+
         public static void buildCompContenders()
         {
             try
@@ -34,13 +42,24 @@ namespace MuhAimLabScoresViewer
                     for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
                         foreach (var player in currentComp.Parts[i].Scenarios[j].leaderboard.ResultsItem.results)
                         {
+                            var playdate = UnixTimeStampToDateTime(double.Parse(player.endedAt.Substring(0, player.endedAt.Length - 3)));
+
                             // limit eligible scores to within time frame
-                            var playdate = DateTime.UnixEpoch.AddSeconds(long.Parse(player.endedAt.Substring(0, player.endedAt.Length - 3)));
-                            playdate = playdate.AddHours(12); //UTC-12 to UTC
+                            //var playdate = DateTime.UnixEpoch.AddSeconds(long.Parse(player.endedAt.Substring(0, player.endedAt.Length - 3)));
+
+                            /*if (player.klutchId == "A1C827457D314A65") //player.klutchId == "31A5D3DD1FF64BC9"
+                            {
+                                Logger.log($"for {currentComp.Parts[i].Scenarios[j].Name} and play of score '{player.score}'");
+                                Logger.log("adjusting timestamp of '" + playdate.ToString() + "' to '" + (playdate.Hour >= 12 ? playdate.AddHours(12).ToString() : playdate.ToString()) + "'");
+                            }*/
+
+                            //if(playdate.Hour >= 12) playdate = playdate.AddHours(12); 
+
                             var compPartEnddate = DateTime.Parse(currentComp.Parts[i].Enddate);
                             var compStartDate = DateTime.Parse(currentComp.Parts[i].Startdate);
 
-                            if (playdate < compStartDate || playdate > compPartEnddate) continue;
+                            //if (playdate < compStartDate || playdate > compPartEnddate) continue;
+                            if (playdate < compStartDate.AddHours(-12) || playdate > compPartEnddate.AddHours(12)) continue;
 
                             var existingPlayer = currentComp.competitionContenders.FirstOrDefault(c => c.klutchId == player.klutchId);
                             if (existingPlayer == null) //create new

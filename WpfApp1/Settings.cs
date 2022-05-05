@@ -35,5 +35,8 @@ namespace MuhAimLabScoresViewer
 
         [XmlElement]
         public string ScreenshotSavePath { get; set; }
+
+        [XmlElement]
+        public string BufferSeconds { get; set; }
     }
 }
