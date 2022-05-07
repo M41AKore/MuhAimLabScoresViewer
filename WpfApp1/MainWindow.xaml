@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:MuhAimLabScoresViewer"
         mc:Ignorable="d"
         Title="MuhAimLabScoresViewer"
-        Height="545" Width="700" ResizeMode="NoResize" MinHeight="500" MinWidth="700" 
+        Height="500" Width="700" ResizeMode="NoResize" MinHeight="500" MinWidth="700" 
         Closed="Window_Closed" Background="#fff">
     <!-- MaxHeight="500" MaxWidth="700" -->
 
@@ -71,14 +71,14 @@
         <StackPanel Grid.Row="1" Grid.Column="0" Name="stacky" Visibility="Visible">
 
             <StackPanel Name="TasksTab" Margin="5" Height="400" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="690">
-                <StackPanel HorizontalAlignment="Center">
+                <StackPanel Margin="0,5,0,0" Height="60" HorizontalAlignment="Center">
                     <Border Width="350" Height="35" BorderBrush="#000" BorderThickness="1" CornerRadius="3" Padding="2" >
                         <DockPanel HorizontalAlignment="Center">
                             <Label VerticalAlignment="Center">Task Name:</Label>
                             <TextBox Width="250" VerticalAlignment="Center" TextAlignment="Left" KeyDown="TextBox_KeyDown"></TextBox>
                         </DockPanel>
                     </Border>
-                    <TextBlock Margin="86,5,5,5" Name="searchInfo" HorizontalAlignment="Left" Visibility="Hidden">Could not find matching scenario!</TextBlock>
+                    <TextBlock Margin="86,5,5,15" Name="searchInfo" TextAlignment="Center" VerticalAlignment="Top" HorizontalAlignment="Left" Visibility="Hidden">Could not find matching scenario!</TextBlock>
                 </StackPanel>
 
                 <Border Width="500" Height="25" BorderBrush="#000" BorderThickness="1" CornerRadius="3" Padding="2" Margin="0,0,0,1" >

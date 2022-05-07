@@ -175,7 +175,7 @@ namespace MuhAimLabScoresViewer
             SettingsButton_BottomBorder.Visibility = Visibility.Visible;
 
             this.Height = 580;
-            this.Width = 1125;
+            this.Width = 1060;
         }
         private void AimLabHistoryButton_Click(object sender, RoutedEventArgs e)
         {
@@ -735,14 +735,14 @@ namespace MuhAimLabScoresViewer
                 {
                     calllist.Add(new HighscoreUpdateCall()
                     {
-                        apicall = buildAPICallFromTaskName(currentComp.Parts[i].Scenarios[j].Name),
-                        taskname = currentComp.Parts[i].Scenarios[j].Name
+                        apicall = buildAPICallFromTaskName(currentComp.Parts[i].Scenarios[j].TaskName),
+                        taskname = currentComp.Parts[i].Scenarios[j].TaskName
                     });
 
                     var docky = new DockPanel();
                     docky.Children.Add(new TextBlock()
                     {
-                        Text = currentComp.Parts[i].Scenarios[j].Name,
+                        Text = currentComp.Parts[i].Scenarios[j].TaskName,
                         Width = 220,
                         HorizontalAlignment = HorizontalAlignment.Left,
                         Background = Brushes.LightGray
@@ -784,7 +784,7 @@ namespace MuhAimLabScoresViewer
 
                 for (int i = 0; i < currentComp.Parts.Length; i++)
                     for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
-                        if (currentComp.Parts[i].Scenarios[j].Name == call.Result.taskname)
+                        if (currentComp.Parts[i].Scenarios[j].TaskName == call.Result.taskname)
                             textblockID = $"score_{i}_{j}";
 
 
@@ -821,7 +821,7 @@ namespace MuhAimLabScoresViewer
                 {
                     for (int i = 0; i < currentComp.Parts.Length; i++)
                         for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
-                            if (currentComp.Parts[i].Scenarios[j].Name == call.taskname)
+                            if (currentComp.Parts[i].Scenarios[j].TaskName == call.taskname)
                                 currentComp.Parts[i].Scenarios[j].leaderboard = new CompetitionTaskLeaderboard()
                                 {
                                     TaskName = call.taskname,
@@ -926,7 +926,7 @@ namespace MuhAimLabScoresViewer
             var headerstacky = new StackPanel()
             {
                 Name = "competitionboard_headers",
-                Width = 220,
+                Width = 150,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Background = getColorFromHex("#eeeeee")
             };
@@ -950,7 +950,7 @@ namespace MuhAimLabScoresViewer
                     headerstacky.Children.Add(new TextBlock()
                     {
                         Name = $"header_{i}_{j}",
-                        Text = currentComp.Parts[i].Scenarios[j].Name,
+                        Text = currentComp.Parts[i].Scenarios[j].DisplayName,
                     });
                 }
             }

@@ -93,7 +93,7 @@ namespace MuhAimLabScoresViewer
 
                             existingPlayer.partResults[i].taskResults[j] = new CompetitionTaskResult()
                             {
-                                taskname = currentComp.Parts[i].Scenarios[j].Name,
+                                taskname = currentComp.Parts[i].Scenarios[j].TaskName,
                                 score = player.score
                             };
                         }
@@ -127,7 +127,8 @@ namespace MuhAimLabScoresViewer
 
     public class Scenario
     {
-        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public string TaskName { get; set; }
         //public string LaunchCommand { get; set; }
 
         [XmlIgnore]

@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Timers;
 using Lennox.NvEncSharp;
 using System.Threading.Tasks;
+using SharpDX;
 
 namespace MuhAimLabScoresViewer
 {
@@ -29,7 +30,6 @@ namespace MuhAimLabScoresViewer
         private static string outputFileName;
 
         private static int bitrate;
-        static bool exitSystem = false;
 
         private static MemoryStream memStream;
         private static BufferSecondsQueue bufferQueue;
@@ -40,11 +40,18 @@ namespace MuhAimLabScoresViewer
 
         public static bool _keepRecording = false;
 
+
+        static SharpDX.Direct3D11.Device? device = null;
+        static Output1? displayOutput = null;
+
         public ScreenCaptureNvenc(string[] args)
         {
             //if (args.Length < 1) args = new string[] { "-d", "\\\\.\\DISPLAY1", "-o", " D:/ballertest/", "-r", "24", "-f", "60", "-s", "30", "-file", "test" };
-            var pArgs = new ProgramArguments(args);
 
+            if (!_keepRecording) _keepRecording = true;
+            recordingTask = null;   
+
+            var pArgs = new ProgramArguments(args);
             recordingTask = Task.Run(() =>
             {
                 Run(pArgs);
@@ -88,8 +95,6 @@ namespace MuhAimLabScoresViewer
             //recordingTask.Dispose();
 
             Logger.log("Cleanup complete");
-            exitSystem = true;  //allow main to run off
-           //Environment.Exit(-1); //shutdown right away so there are no lingering threads
         }
 
         private void OnTimedEvent(object source, ElapsedEventArgs e)
@@ -102,7 +107,7 @@ namespace MuhAimLabScoresViewer
         private void Run(ProgramArguments args)
         {
             _keepRecording = true;
-            using var duplicate = GetDisplayDuplicate(args.DisplayName, out var outputDescription);
+            //using var duplicate = GetDisplayDuplicate(args.DisplayName, out var outputDescription);
             memStream = new MemoryStream(); //using var fileoutput = File.Open(args.OutputPath, FileMode.Create);
             outputPath = args.OutputFolder;
             bitrate = args.Bitrate;
@@ -110,7 +115,7 @@ namespace MuhAimLabScoresViewer
             outputFileName = args.OutputFile;
 
             Console.WriteLine($"Process: {(Environment.Is64BitProcess ? "64" : "32")} bits");
-            Console.WriteLine($"Display: {outputDescription.DeviceName}");
+            //Console.WriteLine($"Display: {outputDescription.DeviceName}");
             Console.WriteLine($"Output: {outputPath}");
             // MessageBox.Show(outputPath + outputFileName + ".264");
             //Console.WriteLine($"Bitrate: {bitrate} mbps");
@@ -121,8 +126,13 @@ namespace MuhAimLabScoresViewer
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
+            var duplicate = GetDisplayDuplicate(args.DisplayName, out var outputDescription);
+            SharpDX.DXGI.Resource? resourceOut = null;
+            Texture2D? desktopTexture = null;
+
             while (_keepRecording)
             {
+
                 if (stopwatch.ElapsedMilliseconds >= 1000)
                 {
                     bufferQueue.push(memStream.ToArray());
@@ -130,87 +140,111 @@ namespace MuhAimLabScoresViewer
                     stopwatch.Restart();
                 }
 
-                duplicate.TryAcquireNextFrame(-1, out var frameInfo, out var resourceOut); // Get the next screen image.
-
-                // If the frame has not changed, there's no reason to encode a new frame.
-                if (frameInfo.LastPresentTime == 0)
+                try
                 {
+                    var code = duplicate.TryAcquireNextFrame(-1, out var frameInfo, out resourceOut); // Get the next screen image.
+
+                    if(code.Code < 0) //means error
+                    {
+                        
+                        duplicate = GetDisplayDuplicate(args.DisplayName, out outputDescription);
+                        resourceOut = null;
+                        desktopTexture = null;
+
+                        duplicate.TryAcquireNextFrame(-1, out frameInfo, out resourceOut);
+                    }
+
+
+                    if (frameInfo.LastPresentTime == 0) // If the frame has not changed, there's no reason to encode a new frame.
+                    {
+                        duplicate.ReleaseFrame();
+                        resourceOut.Dispose();
+                        Thread.Sleep(_frameDuration);
+                        continue;
+                    }
+
+                    desktopTexture = resourceOut.QueryInterface<Texture2D>();
+                    var encoder = _initialized ? _encoder : CreateEncoder(desktopTexture);
+                    var desc = desktopTexture.Description;
+                    desc.OptionFlags = ResourceOptionFlags.SharedKeyedmutex;
+
+                    var reg = new NvEncRegisterResource
+                    {
+                        Version = NV_ENC_REGISTER_RESOURCE_VER,
+                        BufferFormat = NvEncBufferFormat.Abgr,
+                        BufferUsage = NvEncBufferUsage.NvEncInputImage,
+                        ResourceToRegister = desktopTexture.NativePointer,
+                        Width = (uint)desc.Width,
+                        Height = (uint)desc.Height,
+                        Pitch = 0
+                    };
+
+                    using var _ = _encoder.RegisterResource(ref reg); // Registers the hardware texture surface as a resource for NvEnc to use.
+
+                    var pic = new NvEncPicParams
+                    {
+                        Version = NV_ENC_PIC_PARAMS_VER,
+                        PictureStruct = NvEncPicStruct.Frame,
+                        InputBuffer = reg.AsInputPointer(),
+                        BufferFmt = NvEncBufferFormat.Abgr,
+                        InputWidth = (uint)desc.Width,
+                        InputHeight = (uint)desc.Height,
+                        OutputBitstream = _bitstreamBuffer.BitstreamBuffer,
+                        InputTimeStamp = (ulong)frameInfo.LastPresentTime,
+                        InputDuration = _frameDuration
+                    };
+                    encoder.EncodePicture(ref pic); // Do the actual encoding. With this configuration this is done sync (blocking).
+
+                    // The output is written to the bitstream, which is now copied to the output file.
+                    using (var sm = encoder.LockBitstreamAndCreateStream(ref _bitstreamBuffer))
+                    {
+                        lock (_writeMutex)
+                        {
+                            sm.CopyTo(memStream);
+                        }
+                    }
+
+                    desktopTexture.Dispose();
                     duplicate.ReleaseFrame();
                     resourceOut.Dispose();
                     Thread.Sleep(_frameDuration);
-                    continue;
                 }
-
-                var desktopTexture = resourceOut.QueryInterface<Texture2D>();
-                var encoder = _initialized ? _encoder : CreateEncoder(desktopTexture);
-                var desc = desktopTexture.Description;
-
-                desc.OptionFlags = ResourceOptionFlags.SharedKeyedmutex;
-
-                var reg = new NvEncRegisterResource
+                catch (Exception ex)
                 {
-                    Version = NV_ENC_REGISTER_RESOURCE_VER,
-                    BufferFormat = NvEncBufferFormat.Abgr,
-                    BufferUsage = NvEncBufferUsage.NvEncInputImage,
-                    ResourceToRegister = desktopTexture.NativePointer,
-                    Width = (uint)desc.Width,
-                    Height = (uint)desc.Height,
-                    Pitch = 0
-                };
-
-                using var _ = _encoder.RegisterResource(ref reg); // Registers the hardware texture surface as a resource for NvEnc to use.
-
-                var pic = new NvEncPicParams
-                {
-                    Version = NV_ENC_PIC_PARAMS_VER,
-                    PictureStruct = NvEncPicStruct.Frame,
-                    InputBuffer = reg.AsInputPointer(),
-                    BufferFmt = NvEncBufferFormat.Abgr,
-                    InputWidth = (uint)desc.Width,
-                    InputHeight = (uint)desc.Height,
-                    OutputBitstream = _bitstreamBuffer.BitstreamBuffer,
-                    InputTimeStamp = (ulong)frameInfo.LastPresentTime,
-                    InputDuration = _frameDuration
-                };
-                encoder.EncodePicture(ref pic); // Do the actual encoding. With this configuration this is done sync (blocking).
-
-                // The output is written to the bitstream, which is now copied to the output file.
-                using (var sm = encoder.LockBitstreamAndCreateStream(ref _bitstreamBuffer))
-                {
-                    lock (_writeMutex)
+                    Logger.log("ScreenCaptureNvenc Exception!" + Environment.NewLine + ex.Message);
+                    
+                    /*if (ex.ResultCode == SharpDX.DXGI.ResultCode.AccessLost) //
                     {
-                        sm.CopyTo(memStream);
-                    }
-                }
+                        Logger.log("access lost error!");
 
-                desktopTexture.Dispose();
-                duplicate.ReleaseFrame();
-                resourceOut.Dispose();
-                Thread.Sleep(_frameDuration);
+                    }*/
+                    // ReSharper disable once FunctionNeverReturns
+                }
             }
-            // ReSharper disable once FunctionNeverReturns
         }
+
+       static Output? output;
 
         private static OutputDuplication GetDisplayDuplicate(string displayName, out OutputDescription description)
         {
             using var factory = new Factory4();
             var availableAdaptors = factory.Adapters;
 
-            var output = availableAdaptors.SelectMany(t => t.Outputs).FirstOrDefault(t => displayName == null ?
+            output = availableAdaptors.SelectMany(t => t.Outputs).FirstOrDefault(t => displayName == null ?
                             t.Description.IsAttachedToDesktop == true : t.Description.DeviceName == displayName);
 
             if (output == null) throw new DriveNotFoundException(displayName);
 
             var foundDeviceName = output.Description.DeviceName;
             using var dxgiAdapter = output.GetParent<Adapter>();
-            using var device = new SharpDX.Direct3D11.Device(dxgiAdapter);
-
+            device = new SharpDX.Direct3D11.Device(dxgiAdapter);
+           
             var dxgiOutput = dxgiAdapter.Outputs.Single(t => t.Description.DeviceName == foundDeviceName);
 
-            using var output1 = dxgiOutput.QueryInterface<Output1>();
-            description = output1.Description;
-
-            return output1.DuplicateOutput(device);
+            displayOutput = dxgiOutput.QueryInterface<Output1>();
+            description = displayOutput.Description;
+           
+            return displayOutput.DuplicateOutput(device); //"for improved performance consider using DuplicateOutput1()"
         }
 
         private NvEncoder CreateEncoder(Texture2D texture)

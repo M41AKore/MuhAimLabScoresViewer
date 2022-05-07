@@ -58,7 +58,6 @@ namespace MuhAimLabScoresViewer
 
             return rankTitle != null ? rankTitle : "unranked";
         }
-
         public static void addBenchmarkGUIHeaders(StackPanel benchStacky)
         {
             benchStacky.Children.Add(new TextBlock()
@@ -325,7 +324,7 @@ namespace MuhAimLabScoresViewer
         public int[] RankScoreRequirements { get; set; }
 
 
-        public float Energy { get; set; }
+        public int Energy { get; set; }
 
         public void calculateEnergy(int score)
         {
@@ -334,7 +333,7 @@ namespace MuhAimLabScoresViewer
                 int rankindex = getAchievedRankScoreIndex(score); // returns -1 if unranked (Energy for that is TODO)
                 if (rankindex >= 0)
                 {
-                    float energy = getEnergyForScore(score, (int)rankindex);
+                    int energy = (int)getEnergyForScore(score, (int)rankindex);
                     Energy = energy;
                 }
             }
