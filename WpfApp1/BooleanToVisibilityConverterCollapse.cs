@@ -9,7 +9,7 @@ using System.Windows.Data;
 
 namespace MuhAimLabScoresViewer
 {
-    public class BooleanToVisibilityConverter : IValueConverter
+    public class BooleanToVisibilityConverterCollapse : IValueConverter
     {
         private object GetVisibility(object value)
         {

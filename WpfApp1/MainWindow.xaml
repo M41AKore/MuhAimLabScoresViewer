@@ -6,12 +6,13 @@
         xmlns:local="clr-namespace:MuhAimLabScoresViewer"
         mc:Ignorable="d"
         Title="MuhAimLabScoresViewer"
-        Height="545" Width="700" ResizeMode="NoResize" MinHeight="500" MinWidth="700" 
+        Height="500" Width="700" ResizeMode="NoResize" MinHeight="500" MinWidth="700" 
         Closed="Window_Closed" Background="#fff">
     <!-- MaxHeight="500" MaxWidth="700" -->
 
     <Window.Resources>
-        <local:BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <local:BooleanToVisibilityConverterCollapse x:Key="BoolToVisCollapse" />
+        <local:BooleanToVisibilityConverterHide x:Key="BoolToVisHide" />
         <local:StringToIntConverter x:Key="StringToInt"/>
     </Window.Resources>
 
@@ -48,7 +49,15 @@
                 <Rectangle Fill="#000" DockPanel.Dock="Right" Width="1"/>
                 <Rectangle Name="CompetitionButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
                 <Button Click="CompetitionButton_Click" Width="80" BorderThickness="0" Background="#fff">Competition</Button>
+            </DockPanel> 
+            <DockPanel Height="20" LastChildFill="True">
+                <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
+                <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
+                <Rectangle Fill="#000" DockPanel.Dock="Right" Width="1"/>
+                <Rectangle Name="AimLabHistoryButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
+                <Button Click="AimLabHistoryButton_Click" Width="80" BorderThickness="0" Background="#fff">AimLabHistory</Button>
             </DockPanel>
+            
             <DockPanel Height="20" LastChildFill="True" HorizontalAlignment="Right">
                 <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
                 <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
@@ -56,19 +65,20 @@
                 <Rectangle Name="SettingsButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
                 <Button Click="SettingsButton_Click" Width="40" BorderThickness="0" Background="#fff">⚙</Button>
             </DockPanel>
+
         </DockPanel>
 
         <StackPanel Grid.Row="1" Grid.Column="0" Name="stacky" Visibility="Visible">
 
             <StackPanel Name="TasksTab" Margin="5" Height="400" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="690">
-                <StackPanel HorizontalAlignment="Center">
+                <StackPanel Margin="0,5,0,0" Height="60" HorizontalAlignment="Center">
                     <Border Width="350" Height="35" BorderBrush="#000" BorderThickness="1" CornerRadius="3" Padding="2" >
                         <DockPanel HorizontalAlignment="Center">
                             <Label VerticalAlignment="Center">Task Name:</Label>
                             <TextBox Width="250" VerticalAlignment="Center" TextAlignment="Left" KeyDown="TextBox_KeyDown"></TextBox>
                         </DockPanel>
                     </Border>
-                    <TextBlock Margin="86,5,5,5" Name="searchInfo" HorizontalAlignment="Left" Visibility="Hidden">Could not find matching scenario!</TextBlock>
+                    <TextBlock Margin="86,5,5,15" Name="searchInfo" TextAlignment="Center" VerticalAlignment="Top" HorizontalAlignment="Left" Visibility="Hidden">Could not find matching scenario!</TextBlock>
                 </StackPanel>
 
                 <Border Width="500" Height="25" BorderBrush="#000" BorderThickness="1" CornerRadius="3" Padding="2" Margin="0,0,0,1" >
@@ -85,20 +95,44 @@
             </StackPanel>
 
             <StackPanel Name="BenchmarksTab" Visibility="Collapsed">
-                <Label Margin="10" Name="DragDropInput_Benchmark" Width="150" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
+                <DockPanel>
+                    <Label Margin="10" Name="DragDropInput_Benchmark" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
                      Drop="DragDropInput_Benchmark_Drop">Drag 'n' Drop</Label>
-                <Button Click="Button_Click_1" Width="30" HorizontalAlignment="Right">
-                    <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
-                </Button>
+
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="25"/>
+                            <RowDefinition Height="30"/>
+                        </Grid.RowDefinitions>
+
+                        <Label Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" HorizontalContentAlignment="Left">Your Rank:</Label>
+                        <TextBlock Grid.Column="1" Grid.Row="0" Name="Txt_BenchmarkRank" VerticalAlignment="Center" TextAlignment="Left"></TextBlock>
+
+                        <Label Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" HorizontalContentAlignment="Left">Total Energy:</Label>
+                        <TextBlock Grid.Column="1" Grid.Row="1" Name="Txt_BenchmarkEnergy" VerticalAlignment="Center" TextAlignment="Left"></TextBlock>
+                    </Grid>
+
+                    <Button Click="Button_Click_1" Width="30" HorizontalAlignment="Right" Height="30" VerticalAlignment="Top">
+                        <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
+                    </Button>
+                </DockPanel>
+              
                 <StackPanel Name="benchStacky" Width="750"></StackPanel>
             </StackPanel>
 
             <StackPanel Name="CompetitionsTab" Visibility="Collapsed" Margin="10">
-                <Label Margin="10" Name="DragDropInput_Competition" Width="150" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
+                <DockPanel>
+                    <Label Name="DragDropInput_Competition" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
                      Drop="DragDropInput_Competition_Drop">Drag 'n' Drop</Label>
-                <Button Click="Button_Click_2" Width="30" HorizontalAlignment="Right">
-                    <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
-                </Button>
+                    <Button Click="Button_Click_2" Width="30" VerticalAlignment="Top" HorizontalAlignment="Right" Height="30">
+                        <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
+                    </Button>
+                </DockPanel>
+
                 <DockPanel>
                     <StackPanel>
                         <Label>Your results:</Label>
@@ -134,39 +168,148 @@
 
             </StackPanel>
 
-            <StackPanel Name="SettingsTab" Visibility="Collapsed">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="120"/>
-                        <ColumnDefinition/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition/>
-                        <RowDefinition/>
-                    </Grid.RowDefinitions>
+            <StackPanel Name="tab_aimlabhistoryviewer" Visibility="Collapsed">
+                <DockPanel>
+                    <Label Margin="10" Name="DragDropInput_AimLabHistory" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
+                     Drop="DragDropInput_Competition_Drop">Drag 'n' Drop</Label>
+                    <Label Name="GraphTitle" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center"></Label>
+                </DockPanel>
+                <DockPanel Name="contentDocky">
+                    <ScrollViewer Name="ScenariosScroller" HorizontalAlignment="Left" Width="250" Background="Transparent" VerticalAlignment="Top" 
+                              HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" Height="540">
+                        <StackPanel Margin="10,0,0,5" HorizontalAlignment="Left" Name="scenariosStacky"/>
+                    </ScrollViewer>
+                    
+                    <StackPanel Margin="0,-15,0,0" Name="graphStacky"></StackPanel>
+                    
+                    <StackPanel Name="Aside_Right" HorizontalAlignment="Right" Margin="10" Width="140">
+                        <Grid Name="InfoSectionGrid" Height="200">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="70"/>
+                                <ColumnDefinition Width="70"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                                <RowDefinition Height="30"/>
+                            </Grid.RowDefinitions>
 
-                    <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">SteamLibrary Path:</Label>
-                    <TextBox Grid.Row="0" Grid.Column="1" Name="SteamLibraryInput" LostFocus="SteamLibraryInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                            <Label Grid.Column="0" Grid.Row="0" VerticalAlignment="Center">Plays:</Label>
+                            <TextBlock Grid.Column="1" Grid.Row="0" VerticalAlignment="Center" Name="txt_Plays"></TextBlock>
 
-                    <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">klutchId:</Label>
-                    <TextBox Grid.Row="1" Grid.Column="1" Name="klutchIdInput" LostFocus="klutchIdInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
-                </Grid>
+                            <Label Grid.Column="0" Grid.Row="1" VerticalAlignment="Center">Highscore:</Label>
+                            <TextBlock Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Name="txt_Highscore"></TextBlock>
 
-                <StackPanel Margin="5,0,0,0">
-                    <Label>Find klutchId:</Label>
-                    <DockPanel>
-                        <TextBox Name="klutchIdFinder_Username" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Username_GotFocus" LostFocus="klutchIdFinder_Username_LostFocus">Enter username</TextBox>
-                        <TextBox Name="klutchIdFinder_Scenario" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Scenario_GotFocus" LostFocus="klutchIdFinder_Scenario_LostFocus">Enter scenario</TextBox>
-                        <Button Click="Button_Click_3" Height="20">Find</Button>
-                        <DockPanel Margin="5,0,0,0" Name="klutchIdFinderOutput" Visibility="Hidden">
-                            <Label>Result:</Label>
-                            <TextBox VerticalAlignment="Center" Name="klutchIdFinderOutputText" HorizontalAlignment="Left" Width="160"></TextBox>
-                        </DockPanel>
-                    </DockPanel>
+                            <Label Grid.Column="0" Grid.Row="2" VerticalAlignment="Center">Average:</Label>
+                            <TextBlock Grid.Column="1" Grid.Row="2" VerticalAlignment="Center" Name="txt_Average"></TextBlock>
 
-                </StackPanel>
+                            <Label Grid.Column="0" Grid.Row="3" VerticalAlignment="Center">Median:</Label>
+                            <TextBlock Grid.Column="1" Grid.Row="3" VerticalAlignment="Center" Name="txt_Median"></TextBlock>
+                        </Grid>
+                    </StackPanel>
+                </DockPanel>
             </StackPanel>
 
+            <StackPanel Name="SettingsTab" Visibility="Collapsed">
+                <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                        </Grid.RowDefinitions>
+
+                        <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">SteamLibrary Path:</Label>
+                        <TextBox Grid.Row="0" Grid.Column="1" Name="SteamLibraryInput" LostFocus="SteamLibraryInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                        <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">klutchId:</Label>
+                        <TextBox Grid.Row="1" Grid.Column="1" Name="klutchIdInput" LostFocus="klutchIdInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                        <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                        <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Screenshots Path:</Label>
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=ScreenshotsPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                    </Grid>
+                </Border>
+
+                    <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                        <StackPanel>
+                            <Label>Find klutchId:</Label>
+                            <DockPanel>
+                                <TextBox Margin="5,0,0,0" Name="klutchIdFinder_Username" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Username_GotFocus" LostFocus="klutchIdFinder_Username_LostFocus">Enter username</TextBox>
+                                <TextBox Margin="5,0,0,0" Name="klutchIdFinder_Scenario" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Scenario_GotFocus" LostFocus="klutchIdFinder_Scenario_LostFocus">Enter scenario</TextBox>
+                                <Button Margin="5,0,0,0" Click="Button_Click_5" Height="20">Find</Button>
+                                <DockPanel Margin="5,0,0,0" Name="klutchIdFinderOutput" Visibility="Hidden">
+                                    <Label>Result:</Label>
+                                    <TextBox VerticalAlignment="Center" Name="klutchIdFinderOutputText" HorizontalAlignment="Left" Width="160"></TextBox>
+                                </DockPanel>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+
+
+                <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                        <StackPanel HorizontalAlignment="Left">
+                            <Label FontWeight="Bold">Screen Capture</Label>
+                            <DockPanel>
+                                <Label>Save Replay Hotkey:</Label>
+                                <Button Name="recordHotkeySet" ToolTip="Click to set" Click="recordHotkeySet_Click" Width="50" Height="20">None</Button>
+                                <Label Margin="10,0,0,0">Also take Screenshot:</Label>
+                                <CheckBox IsChecked="{Binding Path=onSaveReplayTakeScreenshot}" VerticalAlignment="Center"/>
+                            </DockPanel>
+                            <DockPanel>
+
+                            </DockPanel>
+                            <DockPanel HorizontalAlignment="Left">
+                                <Label HorizontalAlignment="Left">Buffer length:</Label>
+                                <ComboBox Width="60" HorizontalAlignment="Left" Height="20"
+                                ItemsSource="{Binding Path=ReplayBufferSecondsOptions}" SelectedValue="{Binding Path=ReplayBufferSeconds, UpdateSourceTrigger=PropertyChanged}" />
+                            </DockPanel>
+                            <DockPanel HorizontalAlignment="Left">
+                                <Label HorizontalAlignment="Left">ReplayBuffer:</Label>
+                                <Button Name="recordStartButton" Click="RecordingButton_Click" Width="60" Height="20">Start</Button>
+                            </DockPanel>
+
+                        </StackPanel>
+                    </Border>
+                    
+                    <!--<Button HorizontalAlignment="Left" Click="Button_Click_6" Width="100">screenshot</Button>-->
+                </StackPanel>
+     
         </StackPanel>
+
+        <DockPanel Grid.Column="0" Grid.Row="2" Name="ReplayBufferBar" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+                <Label VerticalContentAlignment="Center" VerticalAlignment="Center">Replaybuffer:</Label>
+
+                <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}">
+                    <Button VerticalAlignment="Center" Background="Transparent">
+                        <Image Source="Images/redsign.png" Height="15" Width="15">
+                            <!--RenderTransformOrigin=".5,.5"
+                        <Image.RenderTransform>
+                            <RotateTransform x:Name="AnimatedRotateTransform" Angle="0" />
+                        </Image.RenderTransform>
+                        <Image.Triggers>
+                            <EventTrigger RoutedEvent="MouseDown">
+                                <BeginStoryboard>
+                                    <Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="AnimatedRotateTransform" Storyboard.TargetProperty="Angle" 
+                                                         By="10" To="360" Duration="0:0:0.5" FillBehavior="Stop" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Image.Triggers>-->
+                        </Image>
+                    </Button>
+                <TextBlock Name="replayBufferStatus_Output" VerticalAlignment="Center" Width="80">Recording...</TextBlock>
+            </DockPanel>
+            <TextBlock Name="replayBufferStatus_Output2" VerticalAlignment="Center" Width="250" HorizontalAlignment="Left"></TextBlock>
+            </DockPanel>
     </Grid>
 </Window >

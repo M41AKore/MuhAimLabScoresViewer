@@ -35,7 +35,7 @@ namespace MuhAimLabScoresViewer
                     {
                         partResults[i].taskResults[j] = new CompetitionTaskResult() 
                         {
-                            taskname = currentComp.Parts[i].Scenarios[j].Name,
+                            taskname = currentComp.Parts[i].Scenarios[j].TaskName,
                             score = 0,
                             points = 0
                         };

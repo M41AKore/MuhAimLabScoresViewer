@@ -90,9 +90,14 @@ namespace MuhAimLabScoresViewer
         public static MainWindow Instance { get; private set; }
         private ViewModel viewModel;
 
-        Task? countdownTimerTask = null;
-        bool updateCountdown = false;
+        Process recorderProcess = null;
+        string outputFileName;
+        string outputPath;
+        string h264 = "";
+        string mp4 = "";
 
+        KeyboardHook hook = new KeyboardHook();
+        private bool registeredHotkey = false;
 
         public MainWindow()
         {
@@ -107,10 +112,9 @@ namespace MuhAimLabScoresViewer
             this.DataContext = new ViewModel();
             viewModel = this.DataContext as ViewModel;
 
-            currentSettings = loadSettings();
+            Logger.setup();
 
-            if (currentSettings.lastBenchmarkFile != null && File.Exists(currentSettings.lastBenchmarkFile)) HandleFile(currentSettings.lastBenchmarkFile);
-            if (currentSettings.lastCompetitionFile != null && File.Exists(currentSettings.lastCompetitionFile)) HandleFile(currentSettings.lastCompetitionFile);
+            loadSettings();
         }
 
         private void TaskButton_Click(object sender, RoutedEventArgs e)
@@ -123,6 +127,9 @@ namespace MuhAimLabScoresViewer
 
             CompetitionsTab.Visibility = Visibility.Collapsed;
             CompetitionButton_BottomBorder.Visibility = Visibility.Visible;
+
+            tab_aimlabhistoryviewer.Visibility = Visibility.Collapsed;
+            AimLabHistoryButton_BottomBorder.Visibility = Visibility.Visible;
 
             SettingsTab.Visibility = Visibility.Collapsed;
             SettingsButton_BottomBorder.Visibility = Visibility.Visible;
@@ -141,6 +148,9 @@ namespace MuhAimLabScoresViewer
             CompetitionsTab.Visibility = Visibility.Collapsed;
             CompetitionButton_BottomBorder.Visibility = Visibility.Visible;
 
+            tab_aimlabhistoryviewer.Visibility = Visibility.Collapsed;
+            AimLabHistoryButton_BottomBorder.Visibility = Visibility.Visible;
+
             SettingsTab.Visibility = Visibility.Collapsed;
             SettingsButton_BottomBorder.Visibility = Visibility.Visible;
 
@@ -158,11 +168,34 @@ namespace MuhAimLabScoresViewer
             CompetitionsTab.Visibility = Visibility.Visible;
             CompetitionButton_BottomBorder.Visibility = Visibility.Hidden;
 
+            tab_aimlabhistoryviewer.Visibility = Visibility.Collapsed;
+            AimLabHistoryButton_BottomBorder.Visibility = Visibility.Visible;
+
             SettingsTab.Visibility = Visibility.Collapsed;
             SettingsButton_BottomBorder.Visibility = Visibility.Visible;
 
-            this.Height = 600;
-            this.Width = 1125;
+            this.Height = 580;
+            this.Width = 1060;
+        }
+        private void AimLabHistoryButton_Click(object sender, RoutedEventArgs e)
+        {
+            tab_aimlabhistoryviewer.Visibility = Visibility.Visible;
+            AimLabHistoryButton_BottomBorder.Visibility = Visibility.Hidden;
+
+            TasksTab.Visibility = Visibility.Collapsed;
+            TaskButton_BottomBorder.Visibility = Visibility.Visible;
+
+            BenchmarksTab.Visibility = Visibility.Collapsed;
+            BenchmarkButton_BottomBorder.Visibility = Visibility.Visible;
+
+            CompetitionsTab.Visibility = Visibility.Collapsed;
+            CompetitionButton_BottomBorder.Visibility = Visibility.Visible;
+
+            SettingsTab.Visibility = Visibility.Collapsed;
+            SettingsButton_BottomBorder.Visibility = Visibility.Visible;
+
+            this.Height = 750;
+            this.Width = 1050;
         }
         private void SettingsButton_Click(object sender, RoutedEventArgs e)
         {
@@ -174,6 +207,9 @@ namespace MuhAimLabScoresViewer
 
             CompetitionsTab.Visibility = Visibility.Collapsed;
             CompetitionButton_BottomBorder.Visibility = Visibility.Visible;
+
+            tab_aimlabhistoryviewer.Visibility = Visibility.Collapsed;
+            AimLabHistoryButton_BottomBorder.Visibility = Visibility.Visible;
 
             SettingsTab.Visibility = Visibility.Visible;
             SettingsButton_BottomBorder.Visibility = Visibility.Hidden;
@@ -192,12 +228,6 @@ namespace MuhAimLabScoresViewer
         private void klutchIdInput_LostFocus(object sender, RoutedEventArgs e)
         {
             currentSettings.klutchId = (sender as System.Windows.Controls.TextBox).Text;
-        }
-        private void Window_Closed(object sender, EventArgs e)
-        {
-            if (currentBenchmarkFilePath != null && File.Exists(currentBenchmarkFilePath)) currentSettings.lastBenchmarkFile = currentBenchmarkFilePath;
-            if (currentCompetitionFilePath != null && File.Exists(currentCompetitionFilePath)) currentSettings.lastCompetitionFile = currentCompetitionFilePath;
-            XmlSerializer.serializeToXml<Settings>(currentSettings, settingsPath);
         }
         private void DragDropInput_Benchmark_Drop(object sender, System.Windows.DragEventArgs e) => getFileDrop(e);
         private void DragDropInput_Competition_Drop(object sender, System.Windows.DragEventArgs e) => getFileDrop(e);
@@ -241,43 +271,87 @@ namespace MuhAimLabScoresViewer
             var tb = sender as System.Windows.Controls.TextBox;
             if (tb != null && string.IsNullOrEmpty(tb.Text)) tb.Text = "Enter username";
         }
-        private void Button_Click_3(object sender, RoutedEventArgs e) => buildklutchIdCall();
-
-        private static async Task<Item> httpstuff(string call)
+        private void Button_Click_5(object sender, RoutedEventArgs e) => buildklutchIdCall();
+        private void RecordingButton_Click(object sender, RoutedEventArgs e)
         {
-            using (HttpClient client = new HttpClient())
+            if(viewModel.IsRecording) stopRecording();
+            else startRecording();
+        }
+        private void recordHotkeySet_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn != null)
             {
-                try
-                {
-                    //f.e. "https://apiclient.aimlab.gg/leaderboards/scores?taskSlug=CsLevel.rA%20hebe.rA%20x%20Aim.R9GSEI&weaponName=Custom_rA100hz&map=42&mode=42&timeWindow=all");
-                    HttpResponseMessage response = await client.GetAsync(call);
-                    response.EnsureSuccessStatusCode();
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    var item = JsonConvert.DeserializeObject<Item>(responseBody);
-                    return item;
-                }
-                catch (HttpRequestException e)
-                {
-                    Console.WriteLine("\nException Caught!");
-                    Console.WriteLine("Message :{0} ", e.Message);
-                }
+                btn.Content = "press key";
+                btn.KeyUp += Btn_KeyDown;
             }
-            return null;
-        }      
-        private Settings loadSettings()
+        }
+        private void Btn_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (!File.Exists("./settings.xml")) File.WriteAllText("./settings.xml", "<Settings><SteamLibraryPath></SteamLibraryPath><klutchId></klutchId></Settings>");
+            var btn = sender as Button;
+            if (btn != null)
+            {
+                btn.KeyUp -= Btn_KeyDown;
+                btn.Content = e.Key.ToString();
+            }
+
+            if (currentSettings.RecordingHotKey != null) hook.UnregisterHotkeys(); //gets rid of previous hotkey
+            currentSettings.RecordingHotKey = (Keys)KeyInterop.VirtualKeyFromKey(e.Key);
+            registerRecordingHotkey(currentSettings);
+        }
+        private void Window_Closed(object sender, EventArgs e)
+        {
+            SaveSettings();
+        }
+
+        private void loadSettings()
+        {
+            if (!File.Exists("./settings.xml"))
+            {
+                //File.WriteAllText("./settings.xml", "<Settings><SteamLibraryPath></SteamLibraryPath><klutchId></klutchId></Settings>");
+                XmlSerializer.serializeToXml<Settings>(new Settings(), settingsPath);
+            }
 
             var settings = XmlSerializer.deserializeXml<Settings>("./settings.xml");
-            SteamLibraryInput.Text = settings.SteamLibraryPath;
-            klutchIdInput.Text = settings.klutchId;
-
-            if (settings.RecordingHotKey != Key.None)
+            if (settings != null)
             {
+                currentSettings = settings;
+                SteamLibraryInput.Text = settings.SteamLibraryPath;
+                klutchIdInput.Text = settings.klutchId;
+                if (settings.RecordingHotKey != null) registerRecordingHotkey(settings);
+                recordHotkeySet.Content = settings.RecordingHotKey.ToString();
+                viewModel.onSaveReplayTakeScreenshot = settings.alsoTakeScreenshot;
+                viewModel.ScreenshotsPath = settings.ScreenshotSavePath;
+                viewModel.ReplaysPath = settings.ReplaySavePath;
+                viewModel.ReplayBufferSeconds = settings.BufferSeconds;
 
+                if (settings.lastBenchmarkFile != null && File.Exists(settings.lastBenchmarkFile)) HandleFile(settings.lastBenchmarkFile);
+                if (settings.lastCompetitionFile != null && File.Exists(settings.lastCompetitionFile)) HandleFile(settings.lastCompetitionFile);
             }
+        }
+        private void SaveSettings()
+        {
+            currentSettings.alsoTakeScreenshot = viewModel.onSaveReplayTakeScreenshot;
+            currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
+            currentSettings.ReplaySavePath = viewModel.ReplaysPath;
+            currentSettings.BufferSeconds = viewModel.ReplayBufferSeconds;
 
-            return settings;
+            if (currentBenchmarkFilePath != null && File.Exists(currentBenchmarkFilePath)) currentSettings.lastBenchmarkFile = currentBenchmarkFilePath;
+            if (currentCompetitionFilePath != null && File.Exists(currentCompetitionFilePath)) currentSettings.lastCompetitionFile = currentCompetitionFilePath;
+            XmlSerializer.serializeToXml<Settings>(currentSettings, settingsPath);
+        }
+        private void registerRecordingHotkey(Settings settings)
+        {
+            // register the event that is fired after the key press.
+            if (!registeredHotkey) hook.KeyPressed += new EventHandler<KeyPressedEventArgs>(hook_KeyPressed);
+            // register the control + alt + F12 combination as hot key.
+            hook.RegisterHotKey(ModifierKeys.None, (Keys)settings.RecordingHotKey); //ModifierKeys.Control | ModifierKeys.Alt, Keys.F12
+            registeredHotkey = true;
+        }
+        void hook_KeyPressed(object sender, KeyPressedEventArgs e)
+        {
+            if (currentSettings.alsoTakeScreenshot) takeScreenshot();
+            saveReplay();
         }
         private void getFileDrop(System.Windows.DragEventArgs e)
         {
@@ -292,31 +366,34 @@ namespace MuhAimLabScoresViewer
 
             if (!string.IsNullOrEmpty(currentSettings.SteamLibraryPath) && Directory.Exists(currentSettings.SteamLibraryPath))
             {
-                if (filename.ToLower().Contains("benchmark") || filename.ToLower().Contains("bench"))
+                var newbench = XmlSerializer.deserializeXml<Benchmark>(filepath);
+                if (newbench != null)
                 {
-                    var newbench = XmlSerializer.deserializeXml<Benchmark>(filepath);
-                    if (newbench != null)
-                    {
-                        currentBenchmark = newbench;
-                        Benchmark.addBenchmarkGUIHeaders(benchStacky);
-                        Benchmark.addBenchmarkScores(benchStacky);
-                        loadBenchmarkToGUI(newbench);
-                        currentBenchmarkFilePath = filepath;
-                    }
-                }
-
-                if (filename.ToLower().Contains("competition") || filename.ToLower().Contains("comp"))
-                {
-                    var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
-                    if (newcomp != null)
-                    {
-                        loadCompetitionToGUI(newcomp);
-                        currentCompetitionFilePath = filepath;
-                    }
+                    currentBenchmark = newbench;
+                    Benchmark.addBenchmarkGUIHeaders(benchStacky);
+                    Benchmark.addBenchmarkScores(benchStacky);
+                    loadBenchmarkToGUI(newbench);
+                    currentBenchmarkFilePath = filepath;
                 }
             }
-            else MessageBox.Show("please set SteamLibraryPath in Settings!");       
-        }      
+            else if (filename.ToLower().Contains("competition") || filename.ToLower().Contains("comp"))
+            {
+                var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
+                if (newcomp != null)
+                {
+                    loadCompetitionToGUI(newcomp);
+                    currentCompetitionFilePath = filepath;
+                }
+            }
+            else if (filename.ToLower().Contains("taskData") || filename.ToLower().Contains(".json"))
+            {
+                if (File.Exists(filepath))
+                {
+                    var item = AimLabHistoryViewer.getData(filepath);
+                    if (item != null) AimLabHistoryViewer.sortTasks(item.historyEntries);
+                }
+            }
+        }
         public static string buildAPICallFromTaskName(string task)
         {
             if (!Directory.Exists(currentSettings.SteamLibraryPath)) return null;
@@ -405,14 +482,27 @@ namespace MuhAimLabScoresViewer
                     Convert.ToByte(hexaColor.Substring(3, 2), 16),
                     Convert.ToByte(hexaColor.Substring(5, 2), 16)));
         }
-        private async void launchUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
+        private async void launchBenchmarkUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
         {
             timer.Restart();
-
+            List<Task> tasks = new List<Task>();
             foreach (var call in calllist)
-            {
-                var t = Task.Run(async () => await getHighscore(call).ContinueWith(result => receiver(result))); // updateBenchmarkWithHighscore(result));
-            }
+                tasks.Add(Task.Run(async () => await APIStuff.getHighscore(call).ContinueWith(result => receiver(result)))); // updateBenchmarkWithHighscore(result));
+
+            //after updating all scores, calculate rank
+            await Task.WhenAll(tasks.ToArray());
+            Txt_BenchmarkRank.Text = Benchmark.calculateBenchmarkRank(benchStacky);
+            Txt_BenchmarkEnergy.Text = ((int)currentBenchmark.TotalEnergy).ToString();
+        }
+        private async void launchCompetitionUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
+        {
+            timer.Restart();
+            List<Task> tasks = new List<Task>();
+            foreach (var call in calllist)
+                tasks.Add(Task.Run(async () => await APIStuff.getHighscore(call).ContinueWith(result => receiver(result)))); // updateBenchmarkWithHighscore(result));
+
+            await Task.WhenAll(tasks.ToArray());
+            //
         }
 
         //task leaderboard
@@ -443,7 +533,7 @@ namespace MuhAimLabScoresViewer
             }
             else
             {
-                httpstuff(call).ContinueWith(item => populateleaderboard(item.Result.results));
+                APIStuff.httpstuff(call).ContinueWith(item => populateleaderboard(item.Result.results));
             }
         }
         private void populateleaderboard(Result[] results)
@@ -465,9 +555,9 @@ namespace MuhAimLabScoresViewer
         {
             var headerDocky = new DockPanel()
             {
-                Margin = new Thickness(-10, 2, 5, 2),
+                Margin = new Thickness(-15, 2, 5, 2),
                 //Background = Brushes.Red
-                Width = 380
+                Width = 380,
             };
 
             headerDocky.Children.Add(new TextBlock()
@@ -601,33 +691,10 @@ namespace MuhAimLabScoresViewer
 
             Trace.WriteLine("time for building datagrids and calls: " + timer.ElapsedMilliseconds);
 
-            if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchUpdates(calllist, updateBenchmarkWithHighscore);
-            else MessageBox.Show("please set klutchId in Settings!");
+            if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchBenchmarkUpdates(calllist, updateBenchmarkWithHighscore);
+            else MessageBox.Show("please set 'klutchId' in Settings!");
         }
-        public static async Task<HighscoreUpdateCall> getHighscore(HighscoreUpdateCall call)
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                try
-                {
-                    HttpResponseMessage response = await client.GetAsync(call.apicall);
-                    response.EnsureSuccessStatusCode();
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    Item item = JsonConvert.DeserializeObject<Item>(responseBody);
 
-                    foreach (var r in item.results)
-                        if (r.klutchId == currentSettings.klutchId)
-                            call.highscore = r.score.ToString();
-                }
-                catch (HttpRequestException e)
-                {
-                    Console.WriteLine("\nException Caught!");
-                    Console.WriteLine("Message :{0} ", e.Message);
-                }
-            }
-
-            return call;
-        }
         private string calculateUIScoreItemName(Task<HighscoreUpdateCall> call)
         {
             for (int i = 0; i < currentBenchmark.Categories.Length; i++)
@@ -676,15 +743,15 @@ namespace MuhAimLabScoresViewer
                 {
                     calllist.Add(new HighscoreUpdateCall()
                     {
-                        apicall = buildAPICallFromTaskName(currentComp.Parts[i].Scenarios[j].Name),
-                        taskname = currentComp.Parts[i].Scenarios[j].Name
+                        apicall = buildAPICallFromTaskName(currentComp.Parts[i].Scenarios[j].TaskName),
+                        taskname = currentComp.Parts[i].Scenarios[j].TaskName
                     });
 
                     var docky = new DockPanel();
                     docky.Children.Add(new TextBlock()
                     {
-                        Text = currentComp.Parts[i].Scenarios[j].Name,
-                        Width = 220,
+                        Text = currentComp.Parts[i].Scenarios[j].DisplayName,
+                        Width = 150, //220
                         HorizontalAlignment = HorizontalAlignment.Left,
                         Background = Brushes.LightGray
                     });
@@ -692,6 +759,7 @@ namespace MuhAimLabScoresViewer
                     {
                         Name = $"score_{i}_{j}",
                         Width = 100,
+                        TextAlignment = TextAlignment.Center,
                         HorizontalAlignment = HorizontalAlignment.Left,
                         Background = Brushes.White
                     });
@@ -708,7 +776,7 @@ namespace MuhAimLabScoresViewer
                 });
             }
 
-            if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchUpdates(calllist, updateCompetitionUIWithHighscore);
+            if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchCompetitionUpdates(calllist, updateCompetitionUIWithHighscore);
             else MessageBox.Show("please set 'klutchId' in Settings!");
 
             buildCompLeaderboard(calllist);
@@ -719,17 +787,17 @@ namespace MuhAimLabScoresViewer
 
             this.Dispatcher.Invoke(() =>
             {
-                //get id name
-                string textblockID = "";
+            //get id name
+            string textblockID = "";
 
                 for (int i = 0; i < currentComp.Parts.Length; i++)
                     for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
-                        if (currentComp.Parts[i].Scenarios[j].Name == call.Result.taskname)
+                        if (currentComp.Parts[i].Scenarios[j].TaskName == call.Result.taskname)
                             textblockID = $"score_{i}_{j}";
 
 
-                //find texblock with matching ID
-                var field = findPersonalCompetitionStatsScoreField(textblockID);
+            //find texblock with matching ID
+            var field = findPersonalCompetitionStatsScoreField(textblockID);
                 if (field != null) field.Text = call.Result.highscore;
 
                 return;
@@ -761,11 +829,11 @@ namespace MuhAimLabScoresViewer
                 {
                     for (int i = 0; i < currentComp.Parts.Length; i++)
                         for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
-                            if (currentComp.Parts[i].Scenarios[j].Name == call.taskname)
+                            if (currentComp.Parts[i].Scenarios[j].TaskName == call.taskname)
                                 currentComp.Parts[i].Scenarios[j].leaderboard = new CompetitionTaskLeaderboard()
                                 {
                                     TaskName = call.taskname,
-                                    ResultsItem = getCompTaskLeaderboard(buildAPICallFromTaskName(call.taskname)).Result
+                                    ResultsItem = APIStuff.getCompTaskLeaderboard(buildAPICallFromTaskName(call.taskname)).Result
                                 };
 
                     Trace.WriteLine("added leaderboard for " + call.taskname);
@@ -773,86 +841,8 @@ namespace MuhAimLabScoresViewer
                 tasks.Add(t);
             }
             Task.WaitAll(tasks.ToArray());
-            buildCompContenders();
+            Competition.buildCompContenders();
             buildCompLeaderboardToGUI();
-        }
-        private void buildCompContenders()
-        {
-            try
-            {
-                currentComp.competitionContenders = new List<CompetitionContender>();
-
-                for (int i = 0; i < currentComp.Parts.Length; i++)
-                {
-                    for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
-                    {
-                        foreach (var player in currentComp.Parts[i].Scenarios[j].leaderboard.ResultsItem.results)
-                        {
-                            // limit eligible scores to within time frame
-                            var playdate = DateTime.UnixEpoch.AddSeconds(long.Parse(player.endedAt.Substring(0, player.endedAt.Length - 3)));
-                            playdate = playdate.AddHours(12); //UTC-12 to UTC
-                            var compPartEnddate = DateTime.Parse(currentComp.Parts[i].Enddate);
-                            var compStartDate = DateTime.Parse(currentComp.Parts[i].Startdate);
-
-                            if (playdate < compStartDate || playdate > compPartEnddate) continue;
-
-                            var existingPlayer = currentComp.competitionContenders.FirstOrDefault(c => c.klutchId == player.klutchId);
-                            if (existingPlayer == null) //create new
-                            {
-                                existingPlayer = new CompetitionContender()
-                                {
-                                    Name = player.username,
-                                    klutchId = player.klutchId,
-                                    mostRecentTimestamp = long.Parse(player.endedAt), //1 649 388 232 000
-                                };
-                                currentComp.competitionContenders.Add(existingPlayer);
-                            }
-
-                            //try to use newest name
-                            if (existingPlayer.Name != player.username)
-                                if (long.TryParse(player.endedAt, out long playTimestamp) && playTimestamp > existingPlayer.mostRecentTimestamp)
-                                {
-                                    existingPlayer.Name = player.username;
-                                    existingPlayer.mostRecentTimestamp = playTimestamp;
-                                }
-                                    
-                            if (existingPlayer.partResults == null)
-                            {
-                                existingPlayer.partResults = new CompetitorCompetitionPart[currentComp.Parts.Length];
-                                for (int k = 0; k < currentComp.Parts.Length; k++)
-                                {
-                                    existingPlayer.partResults[k] = new CompetitorCompetitionPart()
-                                    {
-                                        taskResults = new CompetitionTaskResult[currentComp.Parts[k].Scenarios.Length]
-                                    };
-                                }
-                            }
-
-                            existingPlayer.partResults[i].taskResults[j] = new CompetitionTaskResult()
-                            {
-                                taskname = currentComp.Parts[i].Scenarios[j].Name,
-                                score = player.score
-                            };
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-
-            //calculate points
-            var allLeaderboards = new List<CompetitionTaskLeaderboard>();
-            foreach (var part in currentComp.Parts)
-                foreach (var scen in part.Scenarios)
-                {
-                    scen.leaderboard.calculateMeanTop20OfScenarios();
-                    allLeaderboards.Add(scen.leaderboard);
-                }
-
-            currentComp.competitionContenders.ForEach(c => c.calculateScorePoints(allLeaderboards)); //points results from top20 score deviation
-            currentComp.competitionContenders = currentComp.competitionContenders.OrderByDescending(c => c.totalPoints).ToList();            
         }
         private void buildCompLeaderboardToGUI()
         {
@@ -863,7 +853,7 @@ namespace MuhAimLabScoresViewer
             addOtherCompetitionGUI(CompInfoDocky); //timer
             addCompetitionLeaderboardGUIHeaders(CompInfoDocky); // headers
             addCompetitionLeaderboardGUIPlayerData(myDocky); // playerdata
-        }    
+        }
         private void addCompetitionLeaderboardGUIPlayerData(DockPanel boardDocky)
         {
             for (int i = 0; i < currentComp.competitionContenders.Count; i++)
@@ -944,7 +934,7 @@ namespace MuhAimLabScoresViewer
             var headerstacky = new StackPanel()
             {
                 Name = "competitionboard_headers",
-                Width = 220,
+                Width = 150,
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Background = getColorFromHex("#eeeeee")
             };
@@ -968,7 +958,7 @@ namespace MuhAimLabScoresViewer
                     headerstacky.Children.Add(new TextBlock()
                     {
                         Name = $"header_{i}_{j}",
-                        Text = currentComp.Parts[i].Scenarios[j].Name,
+                        Text = currentComp.Parts[i].Scenarios[j].DisplayName,
                     });
                 }
             }
@@ -989,27 +979,7 @@ namespace MuhAimLabScoresViewer
 
             boardDocky.Children.Add(headerstacky);
         }
-        private async Task<Item> getCompTaskLeaderboard(string apicall)
-        {
-            Item item = null;
-            using (HttpClient client = new HttpClient())
-            {
-                try
-                {
-                    HttpResponseMessage response = await client.GetAsync(apicall);
-                    response.EnsureSuccessStatusCode();
-                    string responseBody = await response.Content.ReadAsStringAsync();
-                    item = JsonConvert.DeserializeObject<Item>(responseBody);
-                }
-                catch (HttpRequestException e)
-                {
-                    Console.WriteLine("\nException Caught!");
-                    Console.WriteLine("Message :{0} ", e.Message);
-                }
-            }
-            return item;
-        }
-        
+
         //other competition info
         private void addOtherCompetitionGUI(DockPanel boardDocky)
         {
@@ -1121,18 +1091,8 @@ namespace MuhAimLabScoresViewer
                 string providedName = klutchIdFinder_Username.Text;
                 string providedScenario = klutchIdFinder_Scenario.Text;
 
-                string call = buildAPICallFromTaskName(providedScenario);
-                if (call != null)
-                {
-                    httpstuff(call).ContinueWith(item => findklutchId(item.Result.results, providedName));
-                }
-                else
-                {
-                    klutchIdFinderOutput.Visibility = Visibility.Visible;
-                    klutchIdFinderOutputText.Text = "no matching scenario found!";
-                }
-            }
-            else MessageBox.Show("You need to have entered SteamLibraryPath first!");
+            string call = buildAPICallFromTaskName(providedScenario);
+            if (call != null) APIStuff.httpstuff(call).ContinueWith(item => findklutchId(item.Result.results, providedName));
         }
         private void findklutchId(Result[] results, string playername)
         {
@@ -1149,6 +1109,79 @@ namespace MuhAimLabScoresViewer
             {
                 MessageBox.Show(e.Message);
             }
+        }
+
+        //nvenc screen recorder
+        ScreenCaptureNvenc recorder = null;
+        private void startRecording()
+        {
+            outputFileName = $"Replay_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}";
+            if (viewModel.ReplaysPath != currentSettings.ReplaySavePath) currentSettings.ReplaySavePath = viewModel.ReplaysPath; //make sure it's up to date
+            outputPath = currentSettings.ReplaySavePath != null ? currentSettings.ReplaySavePath : "./"; //if not set - save to app directory
+            h264 = System.IO.Path.Combine(outputPath, outputFileName + ".264");
+
+            var parts = viewModel.ReplayBufferSeconds.Split(' ');
+            string seconds = parts.Length > 1 ? parts.Last().Substring(0, parts.Last().Length - 1) : parts[0].Substring(0, parts[0].Length - 1);
+
+            var args = $"-d \\\\.\\DISPLAY1 -o {outputPath} -file {outputFileName} -r 24 -f 60 -s {seconds}";
+            var argsArray = args.Split(' ');
+            recorder = new ScreenCaptureNvenc(argsArray);
+            if (recorder != null)
+            {
+                viewModel.IsRecording = true;
+                replayBufferStatus_Output.Text = "Recording...";
+                Trace.WriteLine("recording started!");
+                Logger.log("recording started!");
+            }
+            /*string output = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".mp4");
+            var snippet = FFmpeg.Conversions.FromSnippet.Convert(Resources.MkvWithAudio, output);
+            IConversionResult result = await snippet.Start();*/
+
+            recordStartButton.Content = "Stop";
+        }
+        private void stopRecording()
+        {
+            if (recorder != null) recorder.stop();           
+            viewModel.IsRecording = false;
+            recordStartButton.Content = "Start";
+            Trace.WriteLine("recording stopped!");
+            Logger.log("stopped recording!");
+        }
+
+        private void saveReplay()
+        {
+            /*outputFileName = $"Replay_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}";
+            outputPath = currentSettings.ReplaySavePath != null ? currentSettings.ReplaySavePath : "./";
+            h264 = System.IO.Path.Combine(outputPath, outputFileName + ".264");*/
+
+            recorder.saveReplay();
+
+            Task.Run(() =>
+            {
+                this.Dispatcher.Invoke(() => replayBufferStatus_Output2.Text = "Saving Replay to " + mp4);
+                Thread.Sleep(3000);
+                this.Dispatcher.Invoke(() => replayBufferStatus_Output2.Text = "");
+            });
+        }
+
+        private void takeScreenshot()
+        {
+            var bmpScreenshot = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+            var gfxScreenshot = Graphics.FromImage(bmpScreenshot);
+            gfxScreenshot.CopyFromScreen(Screen.PrimaryScreen.Bounds.X, Screen.PrimaryScreen.Bounds.Y, 0, 0, Screen.PrimaryScreen.Bounds.Size, CopyPixelOperation.SourceCopy);
+
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            if (viewModel.ScreenshotsPath != currentSettings.ScreenshotSavePath) currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
+            string savePath = currentSettings.ScreenshotSavePath != null ? currentSettings.ScreenshotSavePath : ".";
+            string screenshotpath = $"{savePath}/Screenshot{timestamp}.png";
+            bmpScreenshot.Save(screenshotpath, System.Drawing.Imaging.ImageFormat.Png);
+
+            Task.Run(() =>
+            {
+                this.Dispatcher.Invoke(() => replayBufferStatus_Output2.Text = "Saved Screenshot to " + screenshotpath);
+                Thread.Sleep(3000);
+                this.Dispatcher.Invoke(() => replayBufferStatus_Output2.Text = "");
+            });
         }
     }
 }
