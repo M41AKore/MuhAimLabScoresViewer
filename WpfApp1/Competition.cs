@@ -119,10 +119,10 @@ namespace MuhAimLabScoresViewer
 
     public class Part
     {
-        public string Name { get; set; }   
+        public string Name { get; set; }
         public string Startdate { get; set; }
         public string Enddate { get; set; }
-        public Scenario[] Scenarios { get; set; }    
+        public Scenario[] Scenarios { get; set; }
     }
 
     public class Scenario
