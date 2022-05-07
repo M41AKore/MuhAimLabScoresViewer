@@ -49,7 +49,7 @@
                 <Rectangle Fill="#000" DockPanel.Dock="Right" Width="1"/>
                 <Rectangle Name="CompetitionButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
                 <Button Click="CompetitionButton_Click" Width="80" BorderThickness="0" Background="#fff">Competition</Button>
-            </DockPanel> 
+            </DockPanel>
             <DockPanel Height="20" LastChildFill="True">
                 <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
                 <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
@@ -57,7 +57,7 @@
                 <Rectangle Name="AimLabHistoryButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
                 <Button Click="AimLabHistoryButton_Click" Width="80" BorderThickness="0" Background="#fff">AimLabHistory</Button>
             </DockPanel>
-            
+
             <DockPanel Height="20" LastChildFill="True" HorizontalAlignment="Right">
                 <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
                 <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
@@ -120,7 +120,7 @@
                         <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
                     </Button>
                 </DockPanel>
-              
+
                 <StackPanel Name="benchStacky" Width="750"></StackPanel>
             </StackPanel>
 
@@ -179,9 +179,9 @@
                               HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" Height="540">
                         <StackPanel Margin="10,0,0,5" HorizontalAlignment="Left" Name="scenariosStacky"/>
                     </ScrollViewer>
-                    
+
                     <StackPanel Margin="0,-15,0,0" Name="graphStacky"></StackPanel>
-                    
+
                     <StackPanel Name="Aside_Right" HorizontalAlignment="Right" Margin="10" Width="140">
                         <Grid Name="InfoSectionGrid" Height="200">
                             <Grid.ColumnDefinitions>
@@ -239,59 +239,59 @@
                     </Grid>
                 </Border>
 
-                    <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
-                        <StackPanel>
-                            <Label>Find klutchId:</Label>
-                            <DockPanel>
-                                <TextBox Margin="5,0,0,0" Name="klutchIdFinder_Username" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Username_GotFocus" LostFocus="klutchIdFinder_Username_LostFocus">Enter username</TextBox>
-                                <TextBox Margin="5,0,0,0" Name="klutchIdFinder_Scenario" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Scenario_GotFocus" LostFocus="klutchIdFinder_Scenario_LostFocus">Enter scenario</TextBox>
-                                <Button Margin="5,0,0,0" Click="Button_Click_5" Height="20">Find</Button>
-                                <DockPanel Margin="5,0,0,0" Name="klutchIdFinderOutput" Visibility="Hidden">
-                                    <Label>Result:</Label>
-                                    <TextBox VerticalAlignment="Center" Name="klutchIdFinderOutputText" HorizontalAlignment="Left" Width="160"></TextBox>
-                                </DockPanel>
+                <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                    <StackPanel>
+                        <Label>Find klutchId:</Label>
+                        <DockPanel>
+                            <TextBox Margin="5,0,0,0" Name="klutchIdFinder_Username" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Username_GotFocus" LostFocus="klutchIdFinder_Username_LostFocus">Enter username</TextBox>
+                            <TextBox Margin="5,0,0,0" Name="klutchIdFinder_Scenario" VerticalAlignment="Center" Width="120" GotFocus="klutchIdFinder_Scenario_GotFocus" LostFocus="klutchIdFinder_Scenario_LostFocus">Enter scenario</TextBox>
+                            <Button Margin="5,0,0,0" Click="Button_Click_5" Height="20">Find</Button>
+                            <DockPanel Margin="5,0,0,0" Name="klutchIdFinderOutput" Visibility="Hidden">
+                                <Label>Result:</Label>
+                                <TextBox VerticalAlignment="Center" Name="klutchIdFinderOutputText" HorizontalAlignment="Left" Width="160"></TextBox>
                             </DockPanel>
-                        </StackPanel>
-                    </Border>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
 
 
                 <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
-                        <StackPanel HorizontalAlignment="Left">
-                            <Label FontWeight="Bold">Screen Capture</Label>
-                            <DockPanel>
-                                <Label>Save Replay Hotkey:</Label>
-                                <Button Name="recordHotkeySet" ToolTip="Click to set" Click="recordHotkeySet_Click" Width="50" Height="20">None</Button>
-                                <Label Margin="10,0,0,0">Also take Screenshot:</Label>
-                                <CheckBox IsChecked="{Binding Path=onSaveReplayTakeScreenshot}" VerticalAlignment="Center"/>
-                            </DockPanel>
-                            <DockPanel>
+                    <StackPanel HorizontalAlignment="Left">
+                        <Label FontWeight="Bold">Screen Capture</Label>
+                        <DockPanel>
+                            <Label>Save Replay Hotkey:</Label>
+                            <Button Name="recordHotkeySet" ToolTip="Click to set" Click="recordHotkeySet_Click" Width="50" Height="20">None</Button>
+                            <Label Margin="10,0,0,0">Also take Screenshot:</Label>
+                            <CheckBox IsChecked="{Binding Path=onSaveReplayTakeScreenshot}" VerticalAlignment="Center"/>
+                        </DockPanel>
+                        <DockPanel>
 
-                            </DockPanel>
-                            <DockPanel HorizontalAlignment="Left">
-                                <Label HorizontalAlignment="Left">Buffer length:</Label>
-                                <ComboBox Width="60" HorizontalAlignment="Left" Height="20"
+                        </DockPanel>
+                        <DockPanel HorizontalAlignment="Left">
+                            <Label HorizontalAlignment="Left">Buffer length:</Label>
+                            <ComboBox Width="60" HorizontalAlignment="Left" Height="20"
                                 ItemsSource="{Binding Path=ReplayBufferSecondsOptions}" SelectedValue="{Binding Path=ReplayBufferSeconds, UpdateSourceTrigger=PropertyChanged}" />
-                            </DockPanel>
-                            <DockPanel HorizontalAlignment="Left">
-                                <Label HorizontalAlignment="Left">ReplayBuffer:</Label>
-                                <Button Name="recordStartButton" Click="RecordingButton_Click" Width="60" Height="20">Start</Button>
-                            </DockPanel>
+                        </DockPanel>
+                        <DockPanel HorizontalAlignment="Left">
+                            <Label HorizontalAlignment="Left">ReplayBuffer:</Label>
+                            <Button Name="recordStartButton" Click="RecordingButton_Click" Width="60" Height="20">Start</Button>
+                        </DockPanel>
 
-                        </StackPanel>
-                    </Border>
-                    
-                    <!--<Button HorizontalAlignment="Left" Click="Button_Click_6" Width="100">screenshot</Button>-->
-                </StackPanel>
-     
+                    </StackPanel>
+                </Border>
+
+                <!--<Button HorizontalAlignment="Left" Click="Button_Click_6" Width="100">screenshot</Button>-->
+            </StackPanel>
+
         </StackPanel>
 
         <DockPanel Grid.Column="0" Grid.Row="2" Name="ReplayBufferBar" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
-                <Label VerticalContentAlignment="Center" VerticalAlignment="Center">Replaybuffer:</Label>
+            <Label VerticalContentAlignment="Center" VerticalAlignment="Center">Replaybuffer:</Label>
 
-                <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}">
-                    <Button VerticalAlignment="Center" Background="Transparent">
-                        <Image Source="Images/redsign.png" Height="15" Width="15">
-                            <!--RenderTransformOrigin=".5,.5"
+            <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}">
+                <Button VerticalAlignment="Center" Background="Transparent">
+                    <Image Source="Images/redsign.png" Height="15" Width="15">
+                        <!--RenderTransformOrigin=".5,.5"
                         <Image.RenderTransform>
                             <RotateTransform x:Name="AnimatedRotateTransform" Angle="0" />
                         </Image.RenderTransform>
@@ -305,11 +305,11 @@
                                 </BeginStoryboard>
                             </EventTrigger>
                         </Image.Triggers>-->
-                        </Image>
-                    </Button>
+                    </Image>
+                </Button>
                 <TextBlock Name="replayBufferStatus_Output" VerticalAlignment="Center" Width="80">Recording...</TextBlock>
             </DockPanel>
             <TextBlock Name="replayBufferStatus_Output2" VerticalAlignment="Center" Width="250" HorizontalAlignment="Left"></TextBlock>
-            </DockPanel>
+        </DockPanel>
     </Grid>
 </Window >

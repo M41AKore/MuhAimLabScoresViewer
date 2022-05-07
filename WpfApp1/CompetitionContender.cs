@@ -20,7 +20,7 @@ namespace MuhAimLabScoresViewer
         {
             for (int i = 0; i < currentComp.Parts.Length; i++)
             {
-                if(partResults[i] == null)
+                if (partResults[i] == null)
                 {
                     partResults[i] = new CompetitorCompetitionPart()
                     {
@@ -33,7 +33,7 @@ namespace MuhAimLabScoresViewer
                 {
                     if (partResults[i].taskResults[j] == null)
                     {
-                        partResults[i].taskResults[j] = new CompetitionTaskResult() 
+                        partResults[i].taskResults[j] = new CompetitionTaskResult()
                         {
                             taskname = currentComp.Parts[i].Scenarios[j].TaskName,
                             score = 0,
@@ -45,7 +45,7 @@ namespace MuhAimLabScoresViewer
                     {
                         var p = 100 + 30 * ((partResults[i].taskResults[j].score - leaderboard.MeanScoreTop20) / leaderboard.StandardDeviationTop20);
                         partResults[i].taskResults[j].points = p < 0 ? 0 : p;
-                    }                     
+                    }
                 }
                 partResults[i].calculatePartPoints();
             }
