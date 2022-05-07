@@ -231,11 +231,11 @@
                         <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">klutchId:</Label>
                         <TextBox Grid.Row="1" Grid.Column="1" Name="klutchIdInput" LostFocus="klutchIdInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                        <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
+                        <!--<Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
                         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
                         <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Screenshots Path:</Label>
-                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=ScreenshotsPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=ScreenshotsPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>-->
                     </Grid>
                 </Border>
 
@@ -254,8 +254,8 @@
                     </StackPanel>
                 </Border>
 
-
-                <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                <!-- collapsed! -->
+                <Border Visibility="Collapsed" Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
                     <StackPanel HorizontalAlignment="Left">
                         <Label FontWeight="Bold">Screen Capture</Label>
                         <DockPanel>
@@ -279,8 +279,6 @@
 
                     </StackPanel>
                 </Border>
-
-                <!--<Button HorizontalAlignment="Left" Click="Button_Click_6" Width="100">screenshot</Button>-->
             </StackPanel>
 
         </StackPanel>
