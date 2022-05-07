@@ -742,8 +742,8 @@ namespace MuhAimLabScoresViewer
                     var docky = new DockPanel();
                     docky.Children.Add(new TextBlock()
                     {
-                        Text = currentComp.Parts[i].Scenarios[j].TaskName,
-                        Width = 220,
+                        Text = currentComp.Parts[i].Scenarios[j].DisplayName,
+                        Width = 150, //220
                         HorizontalAlignment = HorizontalAlignment.Left,
                         Background = Brushes.LightGray
                     });
