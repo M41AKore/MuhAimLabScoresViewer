@@ -90,6 +90,7 @@ namespace MuhAimLabScoresViewer
         public static MainWindow Instance { get; private set; }
         private ViewModel viewModel;
 
+        ScreenCaptureNvenc recorder = null;
         Process recorderProcess = null;
         string outputFileName;
         string outputPath;
@@ -98,6 +99,9 @@ namespace MuhAimLabScoresViewer
 
         KeyboardHook hook = new KeyboardHook();
         private bool registeredHotkey = false;
+
+        Task countdownTimerTask = null;
+        bool updateCountdown = false;
 
         public MainWindow()
         {
@@ -1091,8 +1095,9 @@ namespace MuhAimLabScoresViewer
                 string providedName = klutchIdFinder_Username.Text;
                 string providedScenario = klutchIdFinder_Scenario.Text;
 
-            string call = buildAPICallFromTaskName(providedScenario);
-            if (call != null) APIStuff.httpstuff(call).ContinueWith(item => findklutchId(item.Result.results, providedName));
+                string call = buildAPICallFromTaskName(providedScenario);
+                if (call != null) APIStuff.httpstuff(call).ContinueWith(item => findklutchId(item.Result.results, providedName));
+            }
         }
         private void findklutchId(Result[] results, string playername)
         {
@@ -1112,7 +1117,6 @@ namespace MuhAimLabScoresViewer
         }
 
         //nvenc screen recorder
-        ScreenCaptureNvenc recorder = null;
         private void startRecording()
         {
             outputFileName = $"Replay_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}";
