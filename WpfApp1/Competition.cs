@@ -24,7 +24,7 @@ namespace MuhAimLabScoresViewer
         public List<CompetitionContender> competitionContenders { get; set; }
 
 
-        public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
+        private static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
         {
             // Unix timestamp is seconds past epoch
             System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
@@ -117,18 +117,32 @@ namespace MuhAimLabScoresViewer
         }
     }
 
+    [XmlRoot("Part")]
     public class Part
     {
+        [XmlElement("Name")]
         public string Name { get; set; }
+
+        [XmlElement("Startdate")]
         public string Startdate { get; set; }
+
+        [XmlElement("Enddate")]
         public string Enddate { get; set; }
+
+        [XmlArray("Scenarios")]
+        [XmlArrayItem("Scenario")]
         public Scenario[] Scenarios { get; set; }
     }
 
+    [XmlRoot("Scenario")]
     public class Scenario
     {
-        public string DisplayName { get; set; }
+        [XmlElement("TaskName")]
         public string TaskName { get; set; }
+
+        [XmlElement("DisplayName")]
+        public string DisplayName { get; set; }
+        
         //public string LaunchCommand { get; set; }
 
         [XmlIgnore]

@@ -16,6 +16,8 @@ namespace MuhAimLabScoresViewer
         private bool _onSaveReplayTakeScreenshot;
         private string _ScreenshotsPath;
         private string _ReplaysPath;
+        private string _LastBenchmarkPath;
+        private string _LastCompetitionPath;
 
         public Visibility BorderVisible
         {
@@ -70,9 +72,7 @@ namespace MuhAimLabScoresViewer
                 NotifyPropertyChanged("ReplaysPath");
             }
         }
-
         private List<string> _ReplayBufferSecondsOptions;
-
         public List<string> ReplayBufferSecondsOptions
         {
             get => _ReplayBufferSecondsOptions;
@@ -80,6 +80,24 @@ namespace MuhAimLabScoresViewer
             {
                 _ReplayBufferSecondsOptions = value;
                 NotifyPropertyChanged("ReplayBufferSecondsOptions");
+            }
+        }
+        public string LastBenchmarkPath
+        {
+            get => _LastBenchmarkPath;
+            set
+            {
+                _LastBenchmarkPath = value;
+                NotifyPropertyChanged("LastBenchmarkPath");
+            }
+        }
+        public string LastCompetitionPath
+        {
+            get => _LastCompetitionPath; 
+            set
+            {
+                _LastCompetitionPath = value;
+                NotifyPropertyChanged("LastCompetitionPath");
             }
         }
 

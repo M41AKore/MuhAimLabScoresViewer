@@ -74,9 +74,6 @@ namespace MuhAimLabScoresViewer
             public string parentTaskName { get; set; }
         }
 
-        public static string currentBenchmarkFilePath;
-        public static string currentCompetitionFilePath;
-
         public static Competition currentComp;
         public static Benchmark currentBenchmark;
 
@@ -102,6 +99,14 @@ namespace MuhAimLabScoresViewer
 
         Task countdownTimerTask = null;
         bool updateCountdown = false;
+
+        public struct TaskLink
+        {
+            public string TaskName;
+            public string WorkshopId;
+            public string AuthorId;
+        }
+        public List<TaskLink> taskLinks = new List<TaskLink>();
 
         public MainWindow()
         {
@@ -237,23 +242,25 @@ namespace MuhAimLabScoresViewer
         private void DragDropInput_Competition_Drop(object sender, System.Windows.DragEventArgs e) => getFileDrop(e);
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            string workshopID = "2801392956";
-            string source = "45EB3F9A792021DE";
-            string link = $"https://go.aimlab.gg/v1/redirects?link=aimlab://workshop?id=" + workshopID + "&source=" + source + "&link=steam://rungameid/714010";
+            var btn = sender as Button;
+            var part = btn.Name.Substring(11, btn.Name.Length - 11);
+            string link = generateLink(part); // $"playbutton_{parts[0]}_{parts[1]}",   0 = authorid, 1 = workshopid
 
-            System.Diagnostics.Process.Start("explorer", link);
+            ProcessStartInfo processStartInfo = new ProcessStartInfo(link);
+            processStartInfo.UseShellExecute = true;          
+            System.Diagnostics.Process.Start(processStartInfo);
         }
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             benchStacky.Children.Clear();
-            if (currentBenchmarkFilePath != null) HandleFile(currentBenchmarkFilePath);
+            if (viewModel.LastBenchmarkPath != null) HandleFile(viewModel.LastBenchmarkPath);
         }
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             CompetitionStacky.Children.Clear();
             CompInfoDocky.Children.Clear();
             myDocky.Children.Clear();
-            if (currentCompetitionFilePath != null) HandleFile(currentCompetitionFilePath);
+            if (viewModel.LastCompetitionPath != null) HandleFile(viewModel.LastCompetitionPath);
         }
         private void klutchIdFinder_Scenario_GotFocus(object sender, RoutedEventArgs e)
         {
@@ -278,7 +285,7 @@ namespace MuhAimLabScoresViewer
         private void Button_Click_5(object sender, RoutedEventArgs e) => buildklutchIdCall();
         private void RecordingButton_Click(object sender, RoutedEventArgs e)
         {
-            if(viewModel.IsRecording) stopRecording();
+            if (viewModel.IsRecording) stopRecording();
             else startRecording();
         }
         private void recordHotkeySet_Click(object sender, RoutedEventArgs e)
@@ -340,8 +347,8 @@ namespace MuhAimLabScoresViewer
             currentSettings.ReplaySavePath = viewModel.ReplaysPath;
             currentSettings.BufferSeconds = viewModel.ReplayBufferSeconds;
 
-            if (currentBenchmarkFilePath != null && File.Exists(currentBenchmarkFilePath)) currentSettings.lastBenchmarkFile = currentBenchmarkFilePath;
-            if (currentCompetitionFilePath != null && File.Exists(currentCompetitionFilePath)) currentSettings.lastCompetitionFile = currentCompetitionFilePath;
+            if (viewModel.LastBenchmarkPath != null && File.Exists(viewModel.LastBenchmarkPath)) currentSettings.lastBenchmarkFile = viewModel.LastBenchmarkPath;
+            if (viewModel.LastCompetitionPath != null && File.Exists(viewModel.LastCompetitionPath)) currentSettings.lastCompetitionFile = viewModel.LastCompetitionPath;
             XmlSerializer.serializeToXml<Settings>(currentSettings, settingsPath);
         }
         private void registerRecordingHotkey(Settings settings)
@@ -370,31 +377,53 @@ namespace MuhAimLabScoresViewer
 
             if (!string.IsNullOrEmpty(currentSettings.SteamLibraryPath) && Directory.Exists(currentSettings.SteamLibraryPath))
             {
-                var newbench = XmlSerializer.deserializeXml<Benchmark>(filepath);
-                if (newbench != null)
+                if (filename.ToLower().Contains("benchmark") || filename.ToLower().Contains("bench"))
                 {
-                    currentBenchmark = newbench;
-                    Benchmark.addBenchmarkGUIHeaders(benchStacky);
-                    Benchmark.addBenchmarkScores(benchStacky);
-                    loadBenchmarkToGUI(newbench);
-                    currentBenchmarkFilePath = filepath;
+                    var newbench = XmlSerializer.deserializeXml<Benchmark>(filepath);
+                    if (newbench != null)
+                    {
+                        try
+                        {
+                            currentBenchmark = newbench;
+                            viewModel.LastBenchmarkPath = filepath;
+                            Benchmark.addBenchmarkGUIHeaders(benchStacky);
+                            Benchmark.addBenchmarkScores(benchStacky);
+                            loadBenchmarkToGUI(newbench);                        
+                        }
+                        catch (Exception e)
+                        {
+                            MessageBox.Show(e.Message.ToString());
+                            currentBenchmark = null;
+                            viewModel.LastBenchmarkPath = null;
+                        }
+                    }
                 }
-            }
-            else if (filename.ToLower().Contains("competition") || filename.ToLower().Contains("comp"))
-            {
-                var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
-                if (newcomp != null)
+                else if (filename.ToLower().Contains("competition") || filename.ToLower().Contains("comp"))
                 {
-                    loadCompetitionToGUI(newcomp);
-                    currentCompetitionFilePath = filepath;
+                    var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
+                    if (newcomp != null)
+                    {
+                        try
+                        {
+                            currentComp = newcomp;
+                            viewModel.LastCompetitionPath = filepath;
+                            loadCompetitionToGUI();
+                        }
+                        catch (Exception e)
+                        {
+                            MessageBox.Show(e.Message.ToString());
+                            currentComp = null;
+                            viewModel.LastCompetitionPath = null;
+                        }
+                    }
                 }
-            }
-            else if (filename.ToLower().Contains("taskData") || filename.ToLower().Contains(".json"))
-            {
-                if (File.Exists(filepath))
+                else if (filename.ToLower().Contains("taskData") || filename.ToLower().Contains(".json"))
                 {
-                    var item = AimLabHistoryViewer.getData(filepath);
-                    if (item != null) AimLabHistoryViewer.sortTasks(item.historyEntries);
+                    if (File.Exists(filepath))
+                    {
+                        var item = AimLabHistoryViewer.getData(filepath);
+                        if (item != null) AimLabHistoryViewer.sortTasks(item.historyEntries);
+                    }
                 }
             }
         }
@@ -698,7 +727,6 @@ namespace MuhAimLabScoresViewer
             if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchBenchmarkUpdates(calllist, updateBenchmarkWithHighscore);
             else MessageBox.Show("please set 'klutchId' in Settings!");
         }
-
         private string calculateUIScoreItemName(Task<HighscoreUpdateCall> call)
         {
             for (int i = 0; i < currentBenchmark.Categories.Length; i++)
@@ -733,9 +761,8 @@ namespace MuhAimLabScoresViewer
         }
 
         //personal competition score display
-        private void loadCompetitionToGUI(Competition comp)
+        private void loadCompetitionToGUI()
         {
-            currentComp = comp;
             var calllist = new List<HighscoreUpdateCall>();
             CompetitionStacky.Children.Clear();
 
@@ -767,6 +794,17 @@ namespace MuhAimLabScoresViewer
                         HorizontalAlignment = HorizontalAlignment.Left,
                         Background = Brushes.White
                     });
+
+                    var parts = getAuthorIdAndWorkshopIdFromTaskName(currentComp.Parts[i].Scenarios[j].TaskName).Split(' ');
+                    var btn = new Button()
+                    {
+                        Name = $"playbutton_{parts[0]}_{parts[1]}",
+                        Width = 20,
+                        Content = "▶️",
+                    };
+                    btn.Click += Button_Click;
+                    docky.Children.Add(btn);
+
                     stacky.Children.Add(docky);
                 }
                 CompetitionStacky.Children.Add(new Border()
@@ -785,14 +823,15 @@ namespace MuhAimLabScoresViewer
 
             buildCompLeaderboard(calllist);
         }
+
         private void updateCompetitionUIWithHighscore(Task<HighscoreUpdateCall> call)
         {
             Trace.WriteLine("updating '" + call.Result.taskname + "'...");
 
             this.Dispatcher.Invoke(() =>
             {
-            //get id name
-            string textblockID = "";
+                //get id name
+                string textblockID = "";
 
                 for (int i = 0; i < currentComp.Parts.Length; i++)
                     for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
@@ -800,8 +839,8 @@ namespace MuhAimLabScoresViewer
                             textblockID = $"score_{i}_{j}";
 
 
-            //find texblock with matching ID
-            var field = findPersonalCompetitionStatsScoreField(textblockID);
+                //find texblock with matching ID
+                var field = findPersonalCompetitionStatsScoreField(textblockID);
                 if (field != null) field.Text = call.Result.highscore;
 
                 return;
@@ -815,9 +854,71 @@ namespace MuhAimLabScoresViewer
             foreach (var c1 in CompetitionStacky.Children)
                 if (c1 is Border)
                     foreach (DockPanel docky in ((c1 as Border).Child as StackPanel).Children)
-                        foreach (TextBlock field in docky.Children)
-                            if (field != null && field.Name == fieldname)
-                                return field;
+                        foreach (var field in docky.Children)
+                        {
+                            if (field is TextBlock)
+                            {
+                                var tb = field as TextBlock;
+                                if (tb != null && tb.Name == fieldname) return tb;
+                            }
+                        }
+
+            return result;
+        }
+
+        private string generateLink(string taskDisplayName)
+        {
+          
+            var parts = taskDisplayName.Split('_');
+            string workshopId = parts[1]; // "2765722547";
+            string authorId = parts[0];  //"16BAE1433DACC70D";
+            string link = "https://go.aimlab.gg/v1/redirects?link=aimlab://workshop?id=" + workshopId + "&source=" + authorId + "&link=steam://rungameid/714010";
+            return link;
+        }
+        private string getAuthorIdAndWorkshopIdFromTaskName(string taskname)
+        {
+            if (!Directory.Exists(currentSettings.SteamLibraryPath)) return null;
+
+            string result = null;
+
+            DirectoryInfo[] dirs = new DirectoryInfo(currentSettings.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
+            foreach (var dir in dirs)
+                foreach (var subdir in dir.GetDirectories())
+                    if (subdir.Name == "Levels")
+                        foreach (var file in subdir.GetDirectories()[0].GetFiles())
+                            if (file.Name == "level.es3")
+                            {
+                                var content = File.ReadAllText(file.FullName);
+                                if (content.Contains(taskname))
+                                {
+
+                                    string pattern = "authorId\" : \".*\"";
+                                    foreach (Match match in Regex.Matches(content, pattern, RegexOptions.Multiline))
+                                    {
+                                        var parts = match.Value.ToString().Split('"');
+                                        result = parts[2];
+                                        break;
+                                    }
+
+                                    pattern = "publishSteamId\" : \".*\"";
+                                    foreach (Match match in Regex.Matches(content, pattern, RegexOptions.Multiline))
+                                    {
+                                        
+                                        var parts = match.Value.ToString().Split('"');
+                                        var id = parts[2];
+                                        if(id == "0")
+                                        {
+                                            result += " " + dir.Name;
+                                        }
+                                        else
+                                        {
+                                            result += " " + parts[2];
+                                        }
+                                        
+                                        break;
+                                    }
+                                }
+                            }
 
             return result;
         }
@@ -1011,9 +1112,9 @@ namespace MuhAimLabScoresViewer
             if (s == null && nextEndingPart == null)
             {
                 s = "None";
-                if(countdownTimerTask != null)
+                if (countdownTimerTask != null)
                 {
-                    if(countdownTimerTask.Status == TaskStatus.Running)
+                    if (countdownTimerTask.Status == TaskStatus.Running)
                     {
                         updateCountdown = false;
                         countdownTimerTask.Dispose();
@@ -1030,7 +1131,7 @@ namespace MuhAimLabScoresViewer
                 }
                 else
                 {
-                    if(nextEndingPart.timeTillExpiration > TimeSpan.Zero)
+                    if (nextEndingPart.timeTillExpiration > TimeSpan.Zero)
                     {
                         lbl_endson.Text = "ends in:";
                         int hours = nextEndingPart.timeTillExpiration.Days > 0 ? nextEndingPart.timeTillExpiration.Hours + 24 : nextEndingPart.timeTillExpiration.Hours;
@@ -1046,7 +1147,7 @@ namespace MuhAimLabScoresViewer
                         });
                     }
                     else
-                    {                  
+                    {
                         updateCountdown = false;
                         lbl_partendtimer.Text = "not active!";
                     }
@@ -1145,7 +1246,7 @@ namespace MuhAimLabScoresViewer
         }
         private void stopRecording()
         {
-            if (recorder != null) recorder.stop();           
+            if (recorder != null) recorder.stop();
             viewModel.IsRecording = false;
             recordStartButton.Content = "Start";
             Trace.WriteLine("recording stopped!");

@@ -182,31 +182,33 @@
 
                     <StackPanel Margin="0,-15,0,0" Name="graphStacky"></StackPanel>
 
-                    <StackPanel Name="Aside_Right" HorizontalAlignment="Right" Margin="10" Width="140">
-                        <Grid Name="InfoSectionGrid" Height="200">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="70"/>
-                                <ColumnDefinition Width="70"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="30"/>
-                                <RowDefinition Height="30"/>
-                                <RowDefinition Height="30"/>
-                                <RowDefinition Height="30"/>
-                            </Grid.RowDefinitions>
+                    <StackPanel Name="Aside_Right" HorizontalAlignment="Right" Margin="0,0,10,0" Width="140">
+                        <Border BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                            <Grid Name="InfoSectionGrid" Height="200">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="70"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="30"/>
+                                    <RowDefinition Height="30"/>
+                                    <RowDefinition Height="30"/>
+                                    <RowDefinition Height="30"/>
+                                </Grid.RowDefinitions>
 
-                            <Label Grid.Column="0" Grid.Row="0" VerticalAlignment="Center">Plays:</Label>
-                            <TextBlock Grid.Column="1" Grid.Row="0" VerticalAlignment="Center" Name="txt_Plays"></TextBlock>
+                                <Label Grid.Column="0" Grid.Row="0" VerticalAlignment="Center">Plays:</Label>
+                                <TextBlock Grid.Column="1" Grid.Row="0" VerticalAlignment="Center" Name="txt_Plays"></TextBlock>
 
-                            <Label Grid.Column="0" Grid.Row="1" VerticalAlignment="Center">Highscore:</Label>
-                            <TextBlock Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Name="txt_Highscore"></TextBlock>
+                                <Label Grid.Column="0" Grid.Row="1" VerticalAlignment="Center">Highscore:</Label>
+                                <TextBlock Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Name="txt_Highscore"></TextBlock>
 
-                            <Label Grid.Column="0" Grid.Row="2" VerticalAlignment="Center">Average:</Label>
-                            <TextBlock Grid.Column="1" Grid.Row="2" VerticalAlignment="Center" Name="txt_Average"></TextBlock>
+                                <Label Grid.Column="0" Grid.Row="2" VerticalAlignment="Center">Average:</Label>
+                                <TextBlock Grid.Column="1" Grid.Row="2" VerticalAlignment="Center" Name="txt_Average"></TextBlock>
 
-                            <Label Grid.Column="0" Grid.Row="3" VerticalAlignment="Center">Median:</Label>
-                            <TextBlock Grid.Column="1" Grid.Row="3" VerticalAlignment="Center" Name="txt_Median"></TextBlock>
-                        </Grid>
+                                <Label Grid.Column="0" Grid.Row="3" VerticalAlignment="Center">Median:</Label>
+                                <TextBlock Grid.Column="1" Grid.Row="3" VerticalAlignment="Center" Name="txt_Median"></TextBlock>
+                            </Grid>
+                        </Border>
                     </StackPanel>
                 </DockPanel>
             </StackPanel>
@@ -215,7 +217,7 @@
                 <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="140"/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
@@ -230,6 +232,12 @@
 
                         <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">klutchId:</Label>
                         <TextBox Grid.Row="1" Grid.Column="1" Name="klutchIdInput" LostFocus="klutchIdInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                        <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Last Benchmark Path:</Label>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=LastBenchmarkPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                        <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Last Competition Path:</Label>
+                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=LastCompetitionPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
                         <!--<Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
                         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
@@ -288,22 +296,7 @@
 
             <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}">
                 <Button VerticalAlignment="Center" Background="Transparent">
-                    <Image Source="Images/redsign.png" Height="15" Width="15">
-                        <!--RenderTransformOrigin=".5,.5"
-                        <Image.RenderTransform>
-                            <RotateTransform x:Name="AnimatedRotateTransform" Angle="0" />
-                        </Image.RenderTransform>
-                        <Image.Triggers>
-                            <EventTrigger RoutedEvent="MouseDown">
-                                <BeginStoryboard>
-                                    <Storyboard>
-                                        <DoubleAnimation Storyboard.TargetName="AnimatedRotateTransform" Storyboard.TargetProperty="Angle" 
-                                                         By="10" To="360" Duration="0:0:0.5" FillBehavior="Stop" />
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Image.Triggers>-->
-                    </Image>
+                    <Image Source="Images/redsign.png" Height="15" Width="15"></Image>
                 </Button>
                 <TextBlock Name="replayBufferStatus_Output" VerticalAlignment="Center" Width="80">Recording...</TextBlock>
             </DockPanel>
