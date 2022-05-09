@@ -38,5 +38,8 @@ namespace MuhAimLabScoresViewer
 
         [XmlElement]
         public string BufferSeconds { get; set; }
+
+        [XmlElement]
+        public string OBS_Hotkey { get; set; }
     }
 }

@@ -100,20 +100,21 @@ namespace MuhAimLabScoresViewer
         Task countdownTimerTask = null;
         bool updateCountdown = false;
 
-        public struct TaskLink
-        {
-            public string TaskName;
-            public string WorkshopId;
-            public string AuthorId;
-        }
-        public List<TaskLink> taskLinks = new List<TaskLink>();
+        public static bool windowActivated = false;
+
+        const UInt32 WM_KEYDOWN = 0x0100;
+        const int VK_F5 = 0x74;
+
+        [DllImport("user32.dll")]
+        static extern bool PostMessage(IntPtr hWnd, UInt32 Msg, int wParam, int lParam);
+
 
         public MainWindow()
         {
             if (Instance == null) Instance = this;
             else
             {
-                MessageBox.Show("there's already an instance running!");
+                showMessageBox("there's already an instance running!");
                 this.Close();
             }
 
@@ -335,6 +336,7 @@ namespace MuhAimLabScoresViewer
                 viewModel.ScreenshotsPath = settings.ScreenshotSavePath;
                 viewModel.ReplaysPath = settings.ReplaySavePath;
                 viewModel.ReplayBufferSeconds = settings.BufferSeconds;
+                viewModel.OBS_Key = settings.OBS_Hotkey;
 
                 if (settings.lastBenchmarkFile != null && File.Exists(settings.lastBenchmarkFile)) HandleFile(settings.lastBenchmarkFile);
                 if (settings.lastCompetitionFile != null && File.Exists(settings.lastCompetitionFile)) HandleFile(settings.lastCompetitionFile);
@@ -346,6 +348,7 @@ namespace MuhAimLabScoresViewer
             currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
             currentSettings.ReplaySavePath = viewModel.ReplaysPath;
             currentSettings.BufferSeconds = viewModel.ReplayBufferSeconds;
+            currentSettings.OBS_Hotkey = viewModel.OBS_Key;
 
             if (viewModel.LastBenchmarkPath != null && File.Exists(viewModel.LastBenchmarkPath)) currentSettings.lastBenchmarkFile = viewModel.LastBenchmarkPath;
             if (viewModel.LastCompetitionPath != null && File.Exists(viewModel.LastCompetitionPath)) currentSettings.lastCompetitionFile = viewModel.LastCompetitionPath;
@@ -392,7 +395,7 @@ namespace MuhAimLabScoresViewer
                         }
                         catch (Exception e)
                         {
-                            MessageBox.Show(e.Message.ToString());
+                            showMessageBox(e.Message.ToString());
                             currentBenchmark = null;
                             viewModel.LastBenchmarkPath = null;
                         }
@@ -411,7 +414,7 @@ namespace MuhAimLabScoresViewer
                         }
                         catch (Exception e)
                         {
-                            MessageBox.Show(e.Message.ToString());
+                            showMessageBox(e.Message.ToString());
                             currentComp = null;
                             viewModel.LastCompetitionPath = null;
                         }
@@ -426,6 +429,7 @@ namespace MuhAimLabScoresViewer
                     }
                 }
             }
+            else showMessageBox("please enter 'SteamLibraryPath' in Settings!");
         }
         public static string buildAPICallFromTaskName(string task)
         {
@@ -543,7 +547,7 @@ namespace MuhAimLabScoresViewer
         {
             if (!Directory.Exists(currentSettings.SteamLibraryPath))
             {
-                MessageBox.Show("please set SteamLibraryPath in Settings!");
+                showMessageBox("please set SteamLibraryPath in Settings!");
                 return;
             }
 
@@ -581,7 +585,7 @@ namespace MuhAimLabScoresViewer
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.Message);
+                showMessageBox(e.Message);
             }
         }
         private void addTaskLeaderboardHeaders(StackPanel parent)
@@ -725,7 +729,7 @@ namespace MuhAimLabScoresViewer
             Trace.WriteLine("time for building datagrids and calls: " + timer.ElapsedMilliseconds);
 
             if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchBenchmarkUpdates(calllist, updateBenchmarkWithHighscore);
-            else MessageBox.Show("please set 'klutchId' in Settings!");
+            else showMessageBox("please set 'klutchId' in Settings!");
         }
         private string calculateUIScoreItemName(Task<HighscoreUpdateCall> call)
         {
@@ -795,16 +799,20 @@ namespace MuhAimLabScoresViewer
                         Background = Brushes.White
                     });
 
-                    var parts = getAuthorIdAndWorkshopIdFromTaskName(currentComp.Parts[i].Scenarios[j].TaskName).Split(' ');
-                    var btn = new Button()
+                    var parts = getAuthorIdAndWorkshopIdFromTaskName(currentComp.Parts[i].Scenarios[j].TaskName)?.Split(' ');
+                    if (parts != null)
                     {
-                        Name = $"playbutton_{parts[0]}_{parts[1]}",
-                        Width = 20,
-                        Content = "▶️",
-                    };
-                    btn.Click += Button_Click;
-                    docky.Children.Add(btn);
-
+                        var btn = new Button()
+                        {
+                            Name = $"playbutton_{parts[0]}_{parts[1]}",
+                            Width = 20,
+                            Content = "▶️",
+                        };
+                        btn.Click += Button_Click;
+                        docky.Children.Add(btn);
+                    }
+                    else Logger.log($"could not creat play button for '{currentComp.Parts[i].Scenarios[j].TaskName}'!");
+                    
                     stacky.Children.Add(docky);
                 }
                 CompetitionStacky.Children.Add(new Border()
@@ -819,7 +827,7 @@ namespace MuhAimLabScoresViewer
             }
 
             if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchCompetitionUpdates(calllist, updateCompetitionUIWithHighscore);
-            else MessageBox.Show("please set 'klutchId' in Settings!");
+            else showMessageBox("please set 'klutchId' in Settings!");
 
             buildCompLeaderboard(calllist);
         }
@@ -891,32 +899,20 @@ namespace MuhAimLabScoresViewer
                                 var content = File.ReadAllText(file.FullName);
                                 if (content.Contains(taskname))
                                 {
-
-                                    string pattern = "authorId\" : \".*\"";
-                                    foreach (Match match in Regex.Matches(content, pattern, RegexOptions.Multiline))
+                                    string pattern = "contentMetadata.*\\n.*\\n.*\\n.*\\n.*\\n.*\\n.*\\n.*\\n.*\\n.*\\n.*\\n\\s.*authorId.*\\n.*\\n.*,";
+                                    var match = Regex.Match(content, pattern);
+                                    if (match.Success)
                                     {
-                                        var parts = match.Value.ToString().Split('"');
-                                        result = parts[2];
-                                        break;
-                                    }
+                                        var lines = match.Value.Split(Environment.NewLine);
+                                        var authorIdParts = lines.FirstOrDefault(l => l.Contains("authorId")).Split('"');
+                                        string author = authorIdParts[3];
 
-                                    pattern = "publishSteamId\" : \".*\"";
-                                    foreach (Match match in Regex.Matches(content, pattern, RegexOptions.Multiline))
-                                    {
-                                        
-                                        var parts = match.Value.ToString().Split('"');
-                                        var id = parts[2];
-                                        if(id == "0")
-                                        {
-                                            result += " " + dir.Name;
-                                        }
-                                        else
-                                        {
-                                            result += " " + parts[2];
-                                        }
-                                        
-                                        break;
+                                        var workshopIdParts = lines.FirstOrDefault(l => l.Contains("publishSteamId")).Split(':');
+                                        string cleanId = workshopIdParts[1].Replace('"', ' ').Replace(',', ' ').Trim();
+                                        if (cleanId == "0" || cleanId == "null") cleanId = dir.Name;
+                                        result = $"{author} {cleanId}";
                                     }
+                                    return result;
                                 }
                             }
 
@@ -1213,7 +1209,7 @@ namespace MuhAimLabScoresViewer
             }
             catch (Exception e)
             {
-                MessageBox.Show(e.Message);
+                showMessageBox(e.Message);
             }
         }
 
@@ -1287,6 +1283,61 @@ namespace MuhAimLabScoresViewer
                 Thread.Sleep(3000);
                 this.Dispatcher.Invoke(() => replayBufferStatus_Output2.Text = "");
             });
+        }
+
+        private void OnActivated(object sender, EventArgs eventArgs)
+        {
+            windowActivated = true;
+            Activated -= OnActivated;
+        }
+
+        public static CustomMessageBox currentMsgBox = null;
+
+        public static MessageBoxResult showMessageBox(string text, MessageBoxButtons layout = MessageBoxButtons.OK)
+        {
+            MessageBoxResult result = MessageBoxResult.None;
+
+            var msgBox = new CustomMessageBox();
+            msgBox.output.Text = text;
+
+            //customize layouut depending on layout param
+
+            //if messages would have to be displayed while the mainwindow is not properly loaded yet, use default box
+            //else the "Owner" property causes exception
+            if(MainWindow.windowActivated)
+            {
+                if (currentMsgBox != null)
+                {
+                    currentMsgBox.Close();
+                    currentMsgBox = null;
+                }
+                
+                msgBox.Owner = MainWindow.Instance;
+                msgBox.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                msgBox.ShowDialog();
+                currentMsgBox = msgBox;           
+            }
+            else MessageBox.Show(text);
+         
+            //add it returning msgboxresult
+
+            return result;
+        }
+    
+        private void simulateKeyPress(string hotkey)
+        {
+            Process[] processes = Process.GetProcessesByName("obs64"); //does this get streamlabs? is obs studio a different thing?
+            if(processes.Length > 0)
+            {
+                foreach (Process proc in processes)
+                    PostMessage(proc.MainWindowHandle, WM_KEYDOWN, VirtualKeysDictionary.getVirtualKey(hotkey), 0);
+            }   
+        }
+
+        private void readKlutchBytes()
+        {
+            //C:\Users\Kore\AppData\LocalLow\Statespace\aimlab_tb\klutch.bytes
+            // "SQLite format 3"
         }
     }
 }

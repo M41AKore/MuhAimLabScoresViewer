@@ -18,7 +18,7 @@ namespace MuhAimLabScoresViewer
         private string _ReplaysPath;
         private string _LastBenchmarkPath;
         private string _LastCompetitionPath;
-
+        private string _OBS_Key;
         public Visibility BorderVisible
         {
             get => _borderVisible;
@@ -98,6 +98,15 @@ namespace MuhAimLabScoresViewer
             {
                 _LastCompetitionPath = value;
                 NotifyPropertyChanged("LastCompetitionPath");
+            }
+        }
+        public string OBS_Key
+        {
+            get => _OBS_Key;
+            set
+            {
+                _OBS_Key = value;
+                NotifyPropertyChanged("OBS_Key");
             }
         }
 

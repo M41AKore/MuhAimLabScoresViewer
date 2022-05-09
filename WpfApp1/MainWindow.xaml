@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="MuhAimLabScoresViewer"
         Height="500" Width="700" ResizeMode="NoResize" MinHeight="500" MinWidth="700" 
-        Closed="Window_Closed" Background="#fff">
+        Closed="Window_Closed" Background="#fff" Activated="OnActivated">
     <!-- MaxHeight="500" MaxWidth="700" -->
 
     <Window.Resources>
@@ -67,7 +67,7 @@
             </DockPanel>
 
         </DockPanel>
-
+    
         <StackPanel Grid.Row="1" Grid.Column="0" Name="stacky" Visibility="Visible">
 
             <StackPanel Name="TasksTab" Margin="5" Height="400" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="690">
@@ -225,6 +225,7 @@
                             <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
+                            <RowDefinition/>
                         </Grid.RowDefinitions>
 
                         <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">SteamLibrary Path:</Label>
@@ -238,6 +239,9 @@
 
                         <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Last Competition Path:</Label>
                         <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=LastCompetitionPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                        <Label Grid.Row="4" Grid.Column="0" VerticalAlignment="Center">OBS Recording Hotkey:</Label>
+                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Path=OBS_Key}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
                         <!--<Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
                         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
