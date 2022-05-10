@@ -1348,33 +1348,33 @@ namespace MuhAimLabScoresViewer
             return result;
         }
 
-        private async void simulateKeyPress(string hotkey)
+        private void simulateKeyPress(string hotkey)
         {
             if (string.IsNullOrEmpty(hotkey)) return;
 
 
-           // keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0x45, 0, (uint)IntPtr.Zero);
-            //keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0, 0, 0);
+            keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0x45, 0, (uint)IntPtr.Zero);
+            keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0, 0, 0);
 
-            /*Process[] processes = Process.GetProcessesByName("obs64"); //does this get streamlabs? is obs studio a different thing?
+            Process[] processes = Process.GetProcessesByName("obs64"); //does this get streamlabs? is obs studio a different thing?
             if (processes.Length > 0)
             {
                 foreach (Process proc in processes)
                     PostMessage(proc.MainWindowHandle, WM_SYSKEYDOWN, VirtualKeysDictionary.getVirtualKey(hotkey), 0);
-            }*/
+            }
 
             //it seems this is also due to Windows shittery and OBS being unresponsive or so, let's try this ig
-            
+
             //OBS.libobs.obs_property_button_clicked()
-            
-            await Task.Run(() =>
+
+            /*await Task.Run(() =>
             {
                 for (int i = 0; i < 10; i++)
                 {
                     keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0, 0, 0);
                     Thread.Sleep(100);
                 }           
-            });
+            });*/
         }
 
         private bool readKlutchBytes()
