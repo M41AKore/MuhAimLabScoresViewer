@@ -42,7 +42,16 @@ namespace MuhAimLabScoresViewer
 
                     for (int k = 0; k < currentBenchmark.Categories[i].Subcategories[j].Scenarios.Length; k++)
                     {
-                        int score = int.Parse(findBenchmarkScoreFieldWithName($"score_{i}_{j}_{k}", benchStacky).Text);
+                        var field = findBenchmarkScoreFieldWithName($"score_{i}_{j}_{k}", benchStacky);
+                        int score = int.Parse(field.Text);
+
+                        //color field
+                        if(MainWindow.Instance.viewModel.ColorBenchmarkRanksAndScores)
+                        {
+                            int achievedRank = currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].getAchievedRankScoreIndex(score);
+                            field.Background = getColorFromHex(currentBenchmark.Ranks[achievedRank].Color);
+                        }                        
+
                         currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].calculateEnergy(score);
                         countingEnergy.Add(currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].Energy);
                     }
@@ -83,7 +92,7 @@ namespace MuhAimLabScoresViewer
             {
                 Name = "header_scenario",
                 Text = "Scenario",
-                Width = 100,
+                Width = 140,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 FontWeight = FontWeights.Bold,
             });
@@ -92,7 +101,7 @@ namespace MuhAimLabScoresViewer
             {
                 Name = "header_score",
                 Text = "Score",
-                Width = 100,
+                Width = 80,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 TextAlignment = TextAlignment.Center,
                 FontWeight = FontWeights.Bold,
@@ -105,7 +114,7 @@ namespace MuhAimLabScoresViewer
                 {
                     Name = $"rankheader_{currentBenchmark.Ranks[i].Name}",
                     Text = currentBenchmark.Ranks[i].Name,
-                    Foreground = getColorFromHex(currentBenchmark.Ranks[i].Color),
+                    Foreground = MainWindow.Instance.viewModel.ColorBenchmarkRanksAndScores ? getColorFromHex(currentBenchmark.Ranks[i].Color) : Brushes.Black,
                     Width = 100,
                     TextAlignment = TextAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Left,
@@ -164,7 +173,7 @@ namespace MuhAimLabScoresViewer
                         {
                             Name = $"scenario_{i}_{j}_{k}",
                             Text = task.Name,
-                            Width = 100,
+                            Width = 140,
                             HorizontalAlignment = HorizontalAlignment.Left,
                             TextAlignment= TextAlignment.Left,
                         });
@@ -174,7 +183,7 @@ namespace MuhAimLabScoresViewer
                         {
                             Name = $"score_{i}_{j}_{k}",
                             Text = "0",
-                            Width = 100,
+                            Width = 80,
                             HorizontalAlignment = HorizontalAlignment.Left,
                             TextAlignment = TextAlignment.Center
                         });
@@ -343,7 +352,7 @@ namespace MuhAimLabScoresViewer
             }
         }
 
-        private int getAchievedRankScoreIndex(int score)
+        public int getAchievedRankScoreIndex(int score)
         {
             for (int i = 0; i < RankScoreRequirements.Length; i++)
                 if (RankScoreRequirements[i] > score) return i - 1;

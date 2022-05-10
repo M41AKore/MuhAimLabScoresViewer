@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MuhAimLabScoresViewer"
         mc:Ignorable="d"
-        Title="MuhAimLabScoreViewer Alert" 
+        Title="MehssageBox" 
         Height="160" Width="250" Closed="Window_Closed">
     <Grid Height="auto" MaxHeight="250">
         <Grid.ColumnDefinitions>

@@ -30,8 +30,16 @@
     <PackageReference Include="SharpDX.Direct3D11" Version="4.2.0" />
     <PackageReference Include="SharpDX.DXGI" Version="4.2.0" />
     <PackageReference Include="Simplify.Windows.Forms" Version="1.1.2" />
+    <PackageReference Include="SQLite" Version="3.13.0" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.115.5" />
     <PackageReference Include="Xabe.FFmpeg" Version="5.1.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="libobs-sharp">
+      <HintPath>..\..\..\..\Downloads\libobs-sharp.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

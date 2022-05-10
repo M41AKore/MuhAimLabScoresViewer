@@ -31,6 +31,9 @@ using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
 using Button = System.Windows.Controls.Button;
 using System.Drawing;
+using System.Data.SQLite;
+using System.Data;
+using static OBS.libobs;
 
 namespace MuhAimLabScoresViewer
 {
@@ -85,7 +88,7 @@ namespace MuhAimLabScoresViewer
         }
         public DateTime nextEndingPart_DateTime_forTimer;
         public static MainWindow Instance { get; private set; }
-        private ViewModel viewModel;
+        public ViewModel viewModel;
 
         ScreenCaptureNvenc recorder = null;
         Process recorderProcess = null;
@@ -103,10 +106,18 @@ namespace MuhAimLabScoresViewer
         public static bool windowActivated = false;
 
         const UInt32 WM_KEYDOWN = 0x0100;
+        const int WM_SYSKEYDOWN = 0x0104;
         const int VK_F5 = 0x74;
 
         [DllImport("user32.dll")]
         static extern bool PostMessage(IntPtr hWnd, UInt32 Msg, int wParam, int lParam);
+
+        private SQLiteConnection sqlite;
+        private static string LocalDBFile;
+        FileSystemWatcher watcher;
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
+        public static extern void keybd_event(uint bVk, uint bScan, uint dwFlags, uint dwExtraInfo);
 
 
         public MainWindow()
@@ -123,6 +134,8 @@ namespace MuhAimLabScoresViewer
             viewModel = this.DataContext as ViewModel;
 
             Logger.setup();
+            string LocalLowPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData).Replace("Roaming", "LocalLow");
+            LocalDBFile = System.IO.Path.Combine(LocalLowPath, "Statespace\\aimlab_tb\\klutch.bytes");
 
             loadSettings();
         }
@@ -248,7 +261,7 @@ namespace MuhAimLabScoresViewer
             string link = generateLink(part); // $"playbutton_{parts[0]}_{parts[1]}",   0 = authorid, 1 = workshopid
 
             ProcessStartInfo processStartInfo = new ProcessStartInfo(link);
-            processStartInfo.UseShellExecute = true;          
+            processStartInfo.UseShellExecute = true;
             System.Diagnostics.Process.Start(processStartInfo);
         }
         private void Button_Click_1(object sender, RoutedEventArgs e)
@@ -337,6 +350,9 @@ namespace MuhAimLabScoresViewer
                 viewModel.ReplaysPath = settings.ReplaySavePath;
                 viewModel.ReplayBufferSeconds = settings.BufferSeconds;
                 viewModel.OBS_Key = settings.OBS_Hotkey;
+                viewModel.AutoRecord = settings.AutoRecord;
+                viewModel.AutoRecordDuplicates = settings.AutoRecordDuplicates;
+                viewModel.ColorBenchmarkRanksAndScores = settings.ColorBenchmarkRanksAndScores;
 
                 if (settings.lastBenchmarkFile != null && File.Exists(settings.lastBenchmarkFile)) HandleFile(settings.lastBenchmarkFile);
                 if (settings.lastCompetitionFile != null && File.Exists(settings.lastCompetitionFile)) HandleFile(settings.lastCompetitionFile);
@@ -349,6 +365,9 @@ namespace MuhAimLabScoresViewer
             currentSettings.ReplaySavePath = viewModel.ReplaysPath;
             currentSettings.BufferSeconds = viewModel.ReplayBufferSeconds;
             currentSettings.OBS_Hotkey = viewModel.OBS_Key;
+            currentSettings.AutoRecord = viewModel.AutoRecord;
+            currentSettings.AutoRecordDuplicates = viewModel.AutoRecordDuplicates;
+            currentSettings.ColorBenchmarkRanksAndScores = viewModel.ColorBenchmarkRanksAndScores;
 
             if (viewModel.LastBenchmarkPath != null && File.Exists(viewModel.LastBenchmarkPath)) currentSettings.lastBenchmarkFile = viewModel.LastBenchmarkPath;
             if (viewModel.LastCompetitionPath != null && File.Exists(viewModel.LastCompetitionPath)) currentSettings.lastCompetitionFile = viewModel.LastCompetitionPath;
@@ -391,7 +410,7 @@ namespace MuhAimLabScoresViewer
                             viewModel.LastBenchmarkPath = filepath;
                             Benchmark.addBenchmarkGUIHeaders(benchStacky);
                             Benchmark.addBenchmarkScores(benchStacky);
-                            loadBenchmarkToGUI(newbench);                        
+                            loadBenchmarkToGUI(newbench);
                         }
                         catch (Exception e)
                         {
@@ -528,7 +547,9 @@ namespace MuhAimLabScoresViewer
 
             //after updating all scores, calculate rank
             await Task.WhenAll(tasks.ToArray());
-            Txt_BenchmarkRank.Text = Benchmark.calculateBenchmarkRank(benchStacky);
+            string rankName = Benchmark.calculateBenchmarkRank(benchStacky);
+            Txt_BenchmarkRank.Text = rankName;
+            //Txt_BenchmarkRank.Foreground = getColorFromHex(currentBenchmark.Ranks.FirstOrDefault(r => r.Name == rankName).Color);
             Txt_BenchmarkEnergy.Text = ((int)currentBenchmark.TotalEnergy).ToString();
         }
         private async void launchCompetitionUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
@@ -812,7 +833,7 @@ namespace MuhAimLabScoresViewer
                         docky.Children.Add(btn);
                     }
                     else Logger.log($"could not creat play button for '{currentComp.Parts[i].Scenarios[j].TaskName}'!");
-                    
+
                     stacky.Children.Add(docky);
                 }
                 CompetitionStacky.Children.Add(new Border()
@@ -876,7 +897,7 @@ namespace MuhAimLabScoresViewer
 
         private string generateLink(string taskDisplayName)
         {
-          
+
             var parts = taskDisplayName.Split('_');
             string workshopId = parts[1]; // "2765722547";
             string authorId = parts[0];  //"16BAE1433DACC70D";
@@ -1293,51 +1314,366 @@ namespace MuhAimLabScoresViewer
 
         public static CustomMessageBox currentMsgBox = null;
 
-        public static MessageBoxResult showMessageBox(string text, MessageBoxButtons layout = MessageBoxButtons.OK)
+        public MessageBoxResult showMessageBox(string text, MessageBoxButtons layout = MessageBoxButtons.OK)
         {
             MessageBoxResult result = MessageBoxResult.None;
 
-            var msgBox = new CustomMessageBox();
-            msgBox.output.Text = text;
-
-            //customize layouut depending on layout param
-
-            //if messages would have to be displayed while the mainwindow is not properly loaded yet, use default box
-            //else the "Owner" property causes exception
-            if(MainWindow.windowActivated)
+            this.Dispatcher.Invoke(() =>
             {
-                if (currentMsgBox != null)
+                var msgBox = new CustomMessageBox();
+                msgBox.output.Text = text;
+
+                //customize layouut depending on layout param
+
+                //if messages would have to be displayed while the mainwindow is not properly loaded yet, use default box
+                //else the "Owner" property causes exception
+                if (MainWindow.windowActivated)
                 {
-                    currentMsgBox.Close();
-                    currentMsgBox = null;
+                    if (currentMsgBox != null)
+                    {
+                        currentMsgBox.Close();
+                        currentMsgBox = null;
+                    }
+
+                    msgBox.Owner = MainWindow.Instance;
+                    msgBox.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    msgBox.ShowDialog();
+                    currentMsgBox = msgBox;
                 }
-                
-                msgBox.Owner = MainWindow.Instance;
-                msgBox.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                msgBox.ShowDialog();
-                currentMsgBox = msgBox;           
-            }
-            else MessageBox.Show(text);
-         
+                else MessageBox.Show(text);
+            });
+
             //add it returning msgboxresult
 
             return result;
         }
-    
-        private void simulateKeyPress(string hotkey)
+
+        private async void simulateKeyPress(string hotkey)
         {
-            Process[] processes = Process.GetProcessesByName("obs64"); //does this get streamlabs? is obs studio a different thing?
-            if(processes.Length > 0)
+            if (string.IsNullOrEmpty(hotkey)) return;
+
+
+           // keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0x45, 0, (uint)IntPtr.Zero);
+            //keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0, 0, 0);
+
+            /*Process[] processes = Process.GetProcessesByName("obs64"); //does this get streamlabs? is obs studio a different thing?
+            if (processes.Length > 0)
             {
                 foreach (Process proc in processes)
-                    PostMessage(proc.MainWindowHandle, WM_KEYDOWN, VirtualKeysDictionary.getVirtualKey(hotkey), 0);
-            }   
+                    PostMessage(proc.MainWindowHandle, WM_SYSKEYDOWN, VirtualKeysDictionary.getVirtualKey(hotkey), 0);
+            }*/
+
+            //it seems this is also due to Windows shittery and OBS being unresponsive or so, let's try this ig
+            
+            //OBS.libobs.obs_property_button_clicked()
+            
+            await Task.Run(() =>
+            {
+                for (int i = 0; i < 10; i++)
+                {
+                    keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0, 0, 0);
+                    Thread.Sleep(100);
+                }           
+            });
         }
 
-        private void readKlutchBytes()
+        private bool readKlutchBytes()
         {
-            //C:\Users\Kore\AppData\LocalLow\Statespace\aimlab_tb\klutch.bytes
-            // "SQLite format 3"
+            //C:\Users\Kore\AppData\LocalLow\Statespace\aimlab_tb\klutch.bytes // "SQLite format 3"
+
+            //if (!checkDBfile()) return false; //file is apparently always in use, but reading it seems to work just fine anyways
+
+            try
+            {
+                Logger.log("reading db file...");
+                sqlite = new SQLiteConnection($"Data Source={LocalDBFile}"); //;New=False;
+                                                                             //selectQuery("select * from StrafeTrackData");
+                                                                             // selectQuery("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY 1");
+                                                                             //var dt = selectQuery("SELECT * FROM TaskData WHERE performanceClass = 'CSTask'");
+
+                var lastResult = selectQuery("SELECT * FROM TaskData ORDER BY createDate DESC LIMIT 1"); // );
+                var rows = lastResult.Select();
+                for (int i = 0; i < rows.Length; i++)
+                {
+                    Logger.log($"last result for '{rows[i]["taskName"]}' = '{rows[i]["score"]}'");
+
+                    string call = buildAPICallFromTaskID(rows[i]["taskName"].ToString());
+                    compareToHighscore(call, rows[i]["score"].ToString(), rows[i]["performance"].ToString());
+                }
+
+                return true;
+
+            }
+            catch (Exception ex)
+            {
+                Logger.log("exception thrown when trying to read database file!" + Environment.NewLine + ex.Message);
+            }
+
+            return false;
+        }
+
+        public class Performance
+        {
+            public float hitsTotal { get; set; } // ":21.0,
+            public float missesTotal { get; set; }   // "missesTotal":0.0,
+            public float avgDist { get; set; }   // "avgDist":10.1594334,
+            public float damageTotal { get; set; }        //   * "damageTotal":3.0,
+            public double timePerKill { get; set; }    //    * "timePerKill":0.283424944,
+            public int killTotal { get; set; }     //   * "killTotal":21,
+            public int targetsTotal { get; set; }    //    * "targetsTotal":24,
+            public float accTotal { get; set; }    //   * "accTotal":100.0
+        }
+
+        public async void compareToHighscore(string call, string achievedScore, string performanceString)
+        {
+            await Task.Run(async () => await APIStuff.httpstuff(call).ContinueWith(resultItem =>
+            {
+                var playerResult = resultItem.Result.results.FirstOrDefault(r => r.klutchId == currentSettings.klutchId);
+                if (playerResult != null)
+                {
+                    Logger.log($"api highscore = '{playerResult.score}', this score = '{achievedScore}'");
+                    if (int.TryParse(achievedScore, out int newscore) && newscore >= playerResult.score)
+                    {
+                        Logger.log("highscore detected!");
+
+                        //determine if highscore was set with this attempt
+                        var performanceJson = JsonConvert.DeserializeObject<Performance>(performanceString);
+                        if (performanceJson != null)
+                        {
+                            if (performanceJson.hitsTotal != playerResult.hitstotal
+                                || performanceJson.missesTotal != playerResult.missestotal
+                                || performanceJson.targetsTotal != playerResult.targetstotal)
+                            {
+                                //if any of these values is different, this is most likely a new result
+                                //potentially still record duplicate score attempts
+                                if(newscore == playerResult.score && viewModel.AutoRecordDuplicates)
+                                {
+                                    displayAutoRecordStatusMessage($"New highscore of '{newscore}' detected! Telling OBS to save replaybuffer...");
+                                    simulateKeyPress(viewModel.OBS_Key);
+                                }
+
+                                //OR, result hasn't made it to API yet, so only record if higher
+                                if (newscore > playerResult.score)
+                                {
+                                    displayAutoRecordStatusMessage($"New highscore of '{newscore}' detected! Telling OBS to save replaybuffer...");
+                                    simulateKeyPress(viewModel.OBS_Key);
+                                }                             
+                            }
+                            else
+                            {
+                                //last registered score seems to have set new API highscore, therefore we save replay
+                                displayAutoRecordStatusMessage($"New highscore of '{newscore}' detected! Telling OBS to save replaybuffer...");
+                                simulateKeyPress(viewModel.OBS_Key);
+                            }
+                        }
+                    }
+                }
+            }));
+        }
+
+        private void displayAutoRecordStatusMessage(string s)
+        {
+            Task.Run(() =>
+            {
+                this.Dispatcher.Invoke(() =>
+                {
+                    autoRecordStatus_Output.Text = s;
+                });
+                Thread.Sleep(3000);
+                this.Dispatcher.Invoke(() =>
+                {
+                    autoRecordStatus_Output.Text = "Listening...";
+                });
+            });
+        }
+
+        public string buildAPICallFromTaskID(string weirdtaskid)
+        {
+            if (!Directory.Exists(currentSettings.SteamLibraryPath)) return null;
+
+            DirectoryInfo[] dirs = new DirectoryInfo(currentSettings.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
+            foreach (var dir in dirs)
+                foreach (var subdir in dir.GetDirectories())
+                    if (subdir.Name == "Levels")
+                        foreach (var file in subdir.GetDirectories()[0].GetFiles())
+                            if (file.Name == "level.es3")
+                            {
+                                var content = File.ReadAllText(file.FullName);
+                                if (content.Contains(weirdtaskid))
+                                {
+                                    var weapon = collectWeaponFromES3(content);
+                                    return "https://apiclient.aimlab.gg/leaderboards/scores?taskSlug=" +
+                                        weirdtaskid + "&weaponName=" + weapon + "&map=42&mode=42&timeWindow=all";
+                                }
+                            }
+
+            return null;
+        }
+        private string collectWeaponFromES3(string filecontent)
+        {
+            var start = filecontent.IndexOf("contentMetadata");
+            var relevant = filecontent.Substring(start, filecontent.IndexOf("Skybox") - start);
+
+            var lines = relevant.Split(new string[] { "\",", "{", "}" }, StringSplitOptions.RemoveEmptyEntries);
+
+            var semirelevantlines = lines.Where(l => l.Contains("Weapon\"")).ToList();
+
+            var weaponline = semirelevantlines.FirstOrDefault(l => l.Contains("Weapon\""));
+
+            weaponline = uglyCleanup(weaponline);
+
+            return weaponline;
+        }
+
+        private bool checkDBfile()
+        {
+            //MemoryStream inMemoryCopy = null;
+
+            try
+            {
+                using (FileStream fs = File.Open(LocalDBFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+                {
+                    fs.Close();
+                    return true;
+                }
+                // The file is not locked 
+
+                /*inMemoryCopy = new MemoryStream();
+                using (FileStream fs = File.OpenRead(LocalDBFile))
+                {
+                    fs.CopyTo(inMemoryCopy);
+                }*/
+            }
+            catch (Exception e)
+            {
+                // The file is locked 
+                //try again on next check
+                Logger.log("db file was in use");
+                Logger.log(e.Message.ToString());
+                return false;
+            }
+
+            //return inMemoryCopy;
+            return false;
+        }
+
+        public DataTable selectQuery(string query)
+        {
+            SQLiteDataAdapter ad;
+            DataTable dt = new DataTable();
+
+            try
+            {
+                SQLiteCommand cmd;
+                sqlite.Open();  //Initiate connection to the db
+                cmd = sqlite.CreateCommand();
+                cmd.CommandText = query;  //set the passed query
+                ad = new SQLiteDataAdapter(cmd);
+                ad.Fill(dt); //fill the datasource
+            }
+            catch (SQLiteException ex)
+            {
+                showMessageBox(ex.Message);
+                //Add your exception code here.
+            }
+            sqlite.Close();
+            return dt;
+        }
+
+        public void setupFileWatch()
+        {
+            try
+            {
+                watcher = new FileSystemWatcher(LocalDBFile.Replace("klutch.bytes", string.Empty));
+
+                watcher.NotifyFilter = NotifyFilters.Attributes
+                                     | NotifyFilters.CreationTime
+                                     | NotifyFilters.DirectoryName
+                                     | NotifyFilters.FileName
+                                     | NotifyFilters.LastAccess
+                                     | NotifyFilters.LastWrite
+                                     | NotifyFilters.Security
+                                     | NotifyFilters.Size;
+
+                watcher.Changed += OnChanged;
+                watcher.Created += OnCreated;
+                watcher.Deleted += OnDeleted;
+                watcher.Renamed += OnRenamed;
+                watcher.Error += OnError;
+
+                watcher.Filter = "*.bytes";
+                watcher.IncludeSubdirectories = false;
+                watcher.EnableRaisingEvents = true;
+                Logger.log("setup db file watcher!");
+            }
+            catch (Exception ex)
+            {
+                Logger.log(ex.Message);
+            }
+        }
+
+        public void removeFileWatch()
+        {
+            if (watcher != null)
+            {
+                try
+                {
+                    watcher.Dispose();
+                    Logger.log("disposed db file watcher!");
+                }
+                catch (Exception ex)
+                {
+                    Logger.log(ex.Message);
+                }
+            }
+        }
+
+        private void OnChanged(object sender, FileSystemEventArgs e)
+        {
+            if (e.ChangeType != WatcherChangeTypes.Changed) return;
+
+            var t = Task.Run(() =>
+            {
+                while (!readKlutchBytes())
+                {
+                    Thread.Sleep(1000);
+                }
+            });
+        }
+        private static void OnCreated(object sender, FileSystemEventArgs e)
+        {
+            string value = $"Created: {e.FullPath}";
+            Console.WriteLine(value);
+        }
+
+        private static void OnDeleted(object sender, FileSystemEventArgs e) =>
+            Console.WriteLine($"Deleted: {e.FullPath}");
+
+        private static void OnRenamed(object sender, RenamedEventArgs e)
+        {
+            Console.WriteLine($"Renamed:");
+            Console.WriteLine($"    Old: {e.OldFullPath}");
+            Console.WriteLine($"    New: {e.FullPath}");
+        }
+
+        private static void OnError(object sender, ErrorEventArgs e) =>
+            PrintException(e.GetException());
+
+        private static void PrintException(Exception? ex)
+        {
+            if (ex != null)
+            {
+                Console.WriteLine($"Message: {ex.Message}");
+                Console.WriteLine("Stacktrace:");
+                Console.WriteLine(ex.StackTrace);
+                Console.WriteLine();
+                PrintException(ex.InnerException);
+            }
+        }
+
+        private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+            simulateKeyPress(currentSettings.OBS_Hotkey);
         }
     }
 }

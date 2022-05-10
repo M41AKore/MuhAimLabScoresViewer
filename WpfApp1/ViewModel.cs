@@ -19,6 +19,10 @@ namespace MuhAimLabScoresViewer
         private string _LastBenchmarkPath;
         private string _LastCompetitionPath;
         private string _OBS_Key;
+        private bool _AutoRecord;
+        private bool _AutoRecordDuplicates;
+        private bool _ColorBenchmarkRanksAndScores;
+
         public Visibility BorderVisible
         {
             get => _borderVisible;
@@ -109,7 +113,44 @@ namespace MuhAimLabScoresViewer
                 NotifyPropertyChanged("OBS_Key");
             }
         }
-
+        public bool AutoRecord
+        {
+            get => _AutoRecord;
+            set
+            {
+                if (_AutoRecord != value)
+                {
+                    if (_AutoRecord == false && value == true)
+                    {
+                        MainWindow.Instance.setupFileWatch();
+                    }
+                    else if(_AutoRecord && !value)
+                    {
+                        MainWindow.Instance.removeFileWatch();
+                    }
+                }
+                _AutoRecord = value;
+                NotifyPropertyChanged("AutoRecord");
+            }
+        }
+        public  bool AutoRecordDuplicates
+        {
+            get => _AutoRecordDuplicates;
+            set
+            {
+                _AutoRecordDuplicates = value;
+                NotifyPropertyChanged("AutoRecordDuplicates");
+            }
+        }
+        public bool ColorBenchmarkRanksAndScores
+        {
+            get => _ColorBenchmarkRanksAndScores;
+            set
+            {
+                _ColorBenchmarkRanksAndScores = value;
+                NotifyPropertyChanged("ColorBenchmarkRanksAndScores");
+            }
+        }
 
         private void NotifyPropertyChanged(string info)
         {

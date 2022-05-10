@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MuhAimLabScoresViewer"
         mc:Ignorable="d"
-        Title="MuhAimLabScoresViewer"
-        Height="500" Width="700" ResizeMode="NoResize" MinHeight="500" MinWidth="700" 
+        Title="MuhAimLabScoresViewer" 
+        Height="500" Width="700" ResizeMode="CanMinimize" MinHeight="500" MinWidth="700" 
         Closed="Window_Closed" Background="#fff" Activated="OnActivated">
     <!-- MaxHeight="500" MaxWidth="700" -->
 
@@ -67,7 +67,7 @@
             </DockPanel>
 
         </DockPanel>
-    
+
         <StackPanel Grid.Row="1" Grid.Column="0" Name="stacky" Visibility="Visible">
 
             <StackPanel Name="TasksTab" Margin="5" Height="400" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="690">
@@ -101,7 +101,7 @@
 
                     <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"/>
+                            <ColumnDefinition Width="80"/>
                             <ColumnDefinition Width="100"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
@@ -110,10 +110,10 @@
                         </Grid.RowDefinitions>
 
                         <Label Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" HorizontalContentAlignment="Left">Your Rank:</Label>
-                        <TextBlock Grid.Column="1" Grid.Row="0" Name="Txt_BenchmarkRank" VerticalAlignment="Center" TextAlignment="Left"></TextBlock>
+                        <TextBlock Grid.Column="1" Grid.Row="0" Name="Txt_BenchmarkRank" HorizontalAlignment="Left" VerticalAlignment="Center" TextAlignment="Center"/>
 
                         <Label Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" HorizontalContentAlignment="Left">Total Energy:</Label>
-                        <TextBlock Grid.Column="1" Grid.Row="1" Name="Txt_BenchmarkEnergy" VerticalAlignment="Center" TextAlignment="Left"></TextBlock>
+                        <TextBlock Grid.Column="1" Grid.Row="1" HorizontalAlignment="Left" Name="Txt_BenchmarkEnergy" VerticalAlignment="Center" TextAlignment="Center"/>
                     </Grid>
 
                     <Button Click="Button_Click_1" Width="30" HorizontalAlignment="Right" Height="30" VerticalAlignment="Top">
@@ -217,10 +217,13 @@
                 <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="140"/>
+                            <ColumnDefinition Width="150"/>
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
+                            <RowDefinition/>
+                            <RowDefinition/>
+                            <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
@@ -237,12 +240,25 @@
                         <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Last Benchmark Path:</Label>
                         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=LastBenchmarkPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                        <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Last Competition Path:</Label>
-                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=LastCompetitionPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                        <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Color Ranks &amp; Scores:</Label>
+                        <CheckBox Grid.Row="3" Grid.Column="1" IsChecked="{Binding Path=ColorBenchmarkRanksAndScores}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                        <Label Grid.Row="4" Grid.Column="0" VerticalAlignment="Center">OBS Recording Hotkey:</Label>
-                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Path=OBS_Key}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                        <Label Grid.Row="4" Grid.Column="0" VerticalAlignment="Center">Last Competition Path:</Label>
+                        <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Path=LastCompetitionPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
+                        <Label Grid.Row="5" Grid.Column="0" VerticalAlignment="Center">Auto-Record Highscores:</Label>
+                        <CheckBox Grid.Row="5" Grid.Column="1" IsChecked="{Binding Path=AutoRecord}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                        <Label Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" 
+                               ToolTip="also record runs where the score is equal to your existing highscore, but with different accuracy etc.">Also Highscore Duplicates:</Label>
+                        <CheckBox Grid.Row="6" Grid.Column="1" IsChecked="{Binding Path=AutoRecordDuplicates}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                        <Label Grid.Row="7" Grid.Column="0" VerticalAlignment="Center">OBS Recording Hotkey:</Label>
+                        <DockPanel Grid.Row="7" Grid.Column="1">
+                            <TextBox Text="{Binding Path=OBS_Key}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                            <Button Margin="5,0,0,0" Height="20" Click="Button_Click_3" HorizontalAlignment="Left" VerticalAlignment="Center" Width="40">Test</Button>
+                        </DockPanel>
+                        
                         <!--<Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
                         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
@@ -295,6 +311,18 @@
 
         </StackPanel>
 
+        <DockPanel Grid.Column="0" Grid.Row="2" Name="AutoRecordBufferBar" Visibility="{Binding Path=AutoRecord, Converter={StaticResource BoolToVisHide}}" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+            <Label VerticalContentAlignment="Center" VerticalAlignment="Center">AutoRecord Status:</Label>
+
+            <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" Visibility="{Binding Path=AutoRecord, Converter={StaticResource BoolToVisHide}}">
+                <Button VerticalAlignment="Center" Background="Transparent">
+                    <Image Source="Images/redsign.png" Height="15" Width="15"></Image>
+                </Button>
+                <TextBlock Name="autoRecordStatus_Output" HorizontalAlignment="Left" VerticalAlignment="Center" Width="350">Listening...</TextBlock>
+            </DockPanel>
+        </DockPanel>
+
+        <!-- not active -->
         <DockPanel Grid.Column="0" Grid.Row="2" Name="ReplayBufferBar" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
             <Label VerticalContentAlignment="Center" VerticalAlignment="Center">Replaybuffer:</Label>
 

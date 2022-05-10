@@ -41,5 +41,14 @@ namespace MuhAimLabScoresViewer
 
         [XmlElement]
         public string OBS_Hotkey { get; set; }
+
+        [XmlElement]
+        public bool AutoRecord { get; set; }
+
+        [XmlElement]
+        public bool AutoRecordDuplicates { get; set; }
+
+        [XmlElement]
+        public bool ColorBenchmarkRanksAndScores { get; set; }
     }
 }
