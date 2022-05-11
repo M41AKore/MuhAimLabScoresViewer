@@ -12,6 +12,7 @@
 
     <Window.Resources>
         <local:BooleanToVisibilityConverterCollapse x:Key="BoolToVisCollapse" />
+        <local:InvertedBoolToVisibilityConverterCollapse x:Key="InvertedBoolToVisCollapse" />
         <local:BooleanToVisibilityConverterHide x:Key="BoolToVisHide" />
         <local:StringToIntConverter x:Key="StringToInt"/>
     </Window.Resources>
@@ -57,6 +58,13 @@
                 <Rectangle Name="AimLabHistoryButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
                 <Button Click="AimLabHistoryButton_Click" Width="80" BorderThickness="0" Background="#fff">AimLabHistory</Button>
             </DockPanel>
+            <DockPanel Height="20" LastChildFill="True">
+                <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
+                <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
+                <Rectangle Fill="#000" DockPanel.Dock="Right" Width="1"/>
+                <Rectangle Name="LiveTrackerButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
+                <Button Click="LiveTrackerButton_Click" Width="80" BorderThickness="0" Background="#fff">LiveTracker</Button>
+            </DockPanel>
 
             <DockPanel Height="20" LastChildFill="True" HorizontalAlignment="Right">
                 <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
@@ -68,7 +76,7 @@
 
         </DockPanel>
 
-        <StackPanel Grid.Row="1" Grid.Column="0" Name="stacky" Visibility="Visible">
+        <StackPanel Grid.Row="1" Grid.Column="0" Name="tabsContentStacky" Visibility="Visible">
 
             <StackPanel Name="TasksTab" Margin="5" Height="400" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="690">
                 <StackPanel Margin="0,5,0,0" Height="60" HorizontalAlignment="Center">
@@ -96,8 +104,8 @@
 
             <StackPanel Name="BenchmarksTab" Visibility="Collapsed">
                 <DockPanel>
-                    <Label Margin="10" Name="DragDropInput_Benchmark" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
-                     Drop="DragDropInput_Benchmark_Drop">Drag 'n' Drop</Label>
+                    <Label Margin="10" Name="DragDropInput_Benchmark" Drop="DragDropInput"
+                           Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray">Drag 'n' Drop</Label>
 
                     <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Grid.ColumnDefinitions>
@@ -126,8 +134,8 @@
 
             <StackPanel Name="CompetitionsTab" Visibility="Collapsed" Margin="10">
                 <DockPanel>
-                    <Label Name="DragDropInput_Competition" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
-                     Drop="DragDropInput_Competition_Drop">Drag 'n' Drop</Label>
+                    <Label Name="DragDropInput_Competition" Drop="DragDropInput"
+                           Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray">Drag 'n' Drop</Label>
                     <Button Click="Button_Click_2" Width="30" VerticalAlignment="Top" HorizontalAlignment="Right" Height="30">
                         <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
                     </Button>
@@ -168,10 +176,10 @@
 
             </StackPanel>
 
-            <StackPanel Name="tab_aimlabhistoryviewer" Visibility="Collapsed">
+            <StackPanel Name="AimLabHistoryViewerTab" Visibility="Collapsed">
                 <DockPanel>
-                    <Label Margin="10" Name="DragDropInput_AimLabHistory" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray"
-                     Drop="DragDropInput_Competition_Drop">Drag 'n' Drop</Label>
+                    <Label Margin="10" Name="DragDropInput_AimLabHistory" Drop="DragDropInput"
+                           Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray">Drag 'n' Drop</Label>
                     <Label Name="GraphTitle" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center"></Label>
                 </DockPanel>
                 <DockPanel Name="contentDocky">
@@ -213,6 +221,49 @@
                 </DockPanel>
             </StackPanel>
 
+            <StackPanel Name="LivetrackerTab" Visibility="Collapsed">
+                <Label Visibility="{Binding Path=LiveTrackerEnabled, Converter={StaticResource InvertedBoolToVisCollapse}}">To view enable the Live Tracker in Settings</Label>
+                <StackPanel Visibility="{Binding Path=LiveTrackerEnabled, Converter={StaticResource BoolToVisCollapse}}">
+                    <DockPanel>
+                        <Label Name="TrackerGraphTitle" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center">Task</Label>
+                    </DockPanel>
+                    <DockPanel Name="trackercontentDocky">
+
+                        <StackPanel Margin="0,0,0,0" Name="trackergraphStacky"></StackPanel>
+
+                        <StackPanel Name="Tracker_Aside_Right" HorizontalAlignment="Right" Margin="0,0,10,0" Width="140">
+                            <Border BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                                <Grid Name="Tracker_InfoSectionGrid" Height="200">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="70"/>
+                                        <ColumnDefinition Width="70"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                        <RowDefinition Height="30"/>
+                                    </Grid.RowDefinitions>
+
+                                    <Label Grid.Column="0" Grid.Row="0" VerticalAlignment="Center">Plays:</Label>
+                                    <TextBlock Grid.Column="1" Grid.Row="0" VerticalAlignment="Center" Name="txt_TrackerPlays"></TextBlock>
+
+                                    <Label Grid.Column="0" Grid.Row="1" VerticalAlignment="Center">Highscore:</Label>
+                                    <TextBlock Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Name="txt_TrackerHighscore"></TextBlock>
+
+                                    <Label Grid.Column="0" Grid.Row="2" VerticalAlignment="Center">Average:</Label>
+                                    <TextBlock Grid.Column="1" Grid.Row="2" VerticalAlignment="Center" Name="txt_TrackerAverage"></TextBlock>
+
+                                    <Label Grid.Column="0" Grid.Row="3" VerticalAlignment="Center">Median:</Label>
+                                    <TextBlock Grid.Column="1" Grid.Row="3" VerticalAlignment="Center" Name="txt_TrackerMedian"></TextBlock>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </DockPanel>
+                </StackPanel>
+                
+            </StackPanel>
+
             <StackPanel Name="SettingsTab" Visibility="Collapsed">
                 <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
                     <Grid>
@@ -221,6 +272,7 @@
                             <ColumnDefinition/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
+                            <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
                             <RowDefinition/>
@@ -246,27 +298,15 @@
                         <Label Grid.Row="4" Grid.Column="0" VerticalAlignment="Center">Last Competition Path:</Label>
                         <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Path=LastCompetitionPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                        <Label Grid.Row="5" Grid.Column="0" VerticalAlignment="Center">Auto-Record Highscores:</Label>
-                        <CheckBox Grid.Row="5" Grid.Column="1" IsChecked="{Binding Path=AutoRecord}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                        <Label Grid.Row="5" Grid.Column="0" VerticalAlignment="Center">Live Tracker:</Label>
+                        <CheckBox Grid.Row="5" Grid.Column="1" IsChecked="{Binding Path=LiveTrackerEnabled}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                        <Label Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" 
-                               ToolTip="also record runs where the score is equal to your existing highscore, but with different accuracy etc.">Also Highscore Duplicates:</Label>
-                        <CheckBox Grid.Row="6" Grid.Column="1" IsChecked="{Binding Path=AutoRecordDuplicates}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
-
-                        <Label Grid.Row="7" Grid.Column="0" VerticalAlignment="Center">OBS Recording Hotkey:</Label>
-                        <DockPanel Grid.Row="7" Grid.Column="1">
-                            <TextBox Text="{Binding Path=OBS_Key}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
-                            <Button Margin="5,0,0,0" Height="20" Click="Button_Click_3" HorizontalAlignment="Left" VerticalAlignment="Center" Width="40">Test</Button>
-                        </DockPanel>
-                        
-                        <!--<Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
-                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
-
-                        <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Screenshots Path:</Label>
-                        <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=ScreenshotsPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>-->
+                        <Label Grid.Row="6" Grid.Column="0" VerticalAlignment="Center">Max Session Length:</Label>
+                        <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Path=LiveTrackerMinutes}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
                     </Grid>
                 </Border>
 
+                <!-- klutchId finder -->
                 <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
                     <StackPanel>
                         <Label>Find klutchId:</Label>
@@ -281,6 +321,43 @@
                         </DockPanel>
                     </StackPanel>
                 </Border>
+
+                <!-- Experimental OBS AutoRecord -->
+                <StackPanel>
+                    <Label FontWeight="Bold" FontSize="14" Margin="5, 0, 0, -10">Experimental</Label>
+                    <Border Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                                <RowDefinition/>
+                            </Grid.RowDefinitions>
+
+                            <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Auto-Record Highscores:</Label>
+                            <CheckBox Grid.Row="0" Grid.Column="1" IsChecked="{Binding Path=AutoRecord}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                            <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" 
+                               ToolTip="also record runs where the score is equal to your existing highscore, but with different accuracy etc.">Also Highscore Duplicates:</Label>
+                            <CheckBox Grid.Row="1" Grid.Column="1" IsChecked="{Binding Path=AutoRecordDuplicates}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                            <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">OBS Recording Hotkey:</Label>
+                            <DockPanel Grid.Row="2" Grid.Column="1">
+                                <TextBox Text="{Binding Path=OBS_Key}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                                <Button Margin="5,0,0,0" Height="20" Click="Button_Click_3" HorizontalAlignment="Left" VerticalAlignment="Center" Width="40">Test</Button>
+                            </DockPanel>
+
+                            <!--<Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                            <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Screenshots Path:</Label>
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=ScreenshotsPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>-->
+                        </Grid>
+                    </Border>
+                </StackPanel>
 
                 <!-- collapsed! -->
                 <Border Visibility="Collapsed" Margin="10,10,10,0" BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">

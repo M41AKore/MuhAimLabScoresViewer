@@ -22,6 +22,8 @@ namespace MuhAimLabScoresViewer
         private bool _AutoRecord;
         private bool _AutoRecordDuplicates;
         private bool _ColorBenchmarkRanksAndScores;
+        private int _LiveTrackerMinutes;
+        private bool _LiveTrackerEnabled;
 
         public Visibility BorderVisible
         {
@@ -120,14 +122,8 @@ namespace MuhAimLabScoresViewer
             {
                 if (_AutoRecord != value)
                 {
-                    if (_AutoRecord == false && value == true)
-                    {
-                        MainWindow.Instance.setupFileWatch();
-                    }
-                    else if(_AutoRecord && !value)
-                    {
-                        MainWindow.Instance.removeFileWatch();
-                    }
+                    if (!_AutoRecord && value) LiveTracker.setupFileWatch();
+                    else if(_AutoRecord && !value) LiveTracker.removeFileWatch();
                 }
                 _AutoRecord = value;
                 NotifyPropertyChanged("AutoRecord");
@@ -149,6 +145,24 @@ namespace MuhAimLabScoresViewer
             {
                 _ColorBenchmarkRanksAndScores = value;
                 NotifyPropertyChanged("ColorBenchmarkRanksAndScores");
+            }
+        }
+        public bool LiveTrackerEnabled
+        {
+            get => _LiveTrackerEnabled;
+            set
+            {
+                _LiveTrackerEnabled = value;
+                NotifyPropertyChanged("LiveTrackerEnabled");
+            }
+        }
+        public int LiveTrackerMinutes
+        {
+            get => _LiveTrackerMinutes;
+            set
+            {
+                _LiveTrackerMinutes = value;
+                NotifyPropertyChanged("LiveTrackerMinutes");
             }
         }
 

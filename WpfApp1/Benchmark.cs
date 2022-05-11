@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Xml;
 using System.Xml.Serialization;
 using static MuhAimLabScoresViewer.MainWindow;
+using static MuhAimLabScoresViewer.Helper;
 
 namespace MuhAimLabScoresViewer
 {
@@ -46,7 +47,7 @@ namespace MuhAimLabScoresViewer
                         int score = int.Parse(field.Text);
 
                         //color field
-                        if(MainWindow.Instance.viewModel.ColorBenchmarkRanksAndScores)
+                        if(MainWindow.viewModel.ColorBenchmarkRanksAndScores)
                         {
                             int achievedRank = currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].getAchievedRankScoreIndex(score);
                             field.Background = getColorFromHex(currentBenchmark.Ranks[achievedRank].Color);
@@ -114,7 +115,7 @@ namespace MuhAimLabScoresViewer
                 {
                     Name = $"rankheader_{currentBenchmark.Ranks[i].Name}",
                     Text = currentBenchmark.Ranks[i].Name,
-                    Foreground = MainWindow.Instance.viewModel.ColorBenchmarkRanksAndScores ? getColorFromHex(currentBenchmark.Ranks[i].Color) : Brushes.Black,
+                    Foreground = MainWindow.viewModel.ColorBenchmarkRanksAndScores ? getColorFromHex(currentBenchmark.Ranks[i].Color) : Brushes.Black,
                     Width = 100,
                     TextAlignment = TextAlignment.Center,
                     HorizontalAlignment = HorizontalAlignment.Left,
@@ -167,16 +168,19 @@ namespace MuhAimLabScoresViewer
                     {
                         var scenarioDocky = new DockPanel();
                         var task = currentBenchmark.Categories[i].Subcategories[j].Scenarios[k]; //shorthand
-                    
+                                                                                                 
                         //task name
-                        scenarioDocky.Children.Add(new TextBlock()
+                        var parts = getAuthorIdAndWorkshopIdFromTaskName(currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].Name)?.Split(' ');
+                        var tb = new TextBlock()
                         {
-                            Name = $"scenario_{i}_{j}_{k}",
+                            Name = parts != null && parts.Length >= 2 ? $"playtask_{parts[0]}_{parts[1]}" : $"playtask_{i}_{j}", //$"scenario_{i}_{j}_{k}",
                             Text = task.Name,
                             Width = 140,
                             HorizontalAlignment = HorizontalAlignment.Left,
-                            TextAlignment= TextAlignment.Left,
-                        });
+                            TextAlignment = TextAlignment.Left,
+                        };
+                        tb.MouseDown += MainWindow.Instance.NameTB_MouseDown;
+                        scenarioDocky.Children.Add(tb);
 
                         //task score
                         scenarioDocky.Children.Add(new TextBlock()

@@ -7,6 +7,7 @@ using System.Windows;
 using System.Xml;
 using System.Xml.Serialization;
 using static MuhAimLabScoresViewer.MainWindow;
+using static MuhAimLabScoresViewer.Helper;
 
 namespace MuhAimLabScoresViewer
 {
@@ -23,14 +24,6 @@ namespace MuhAimLabScoresViewer
         [XmlIgnore]
         public List<CompetitionContender> competitionContenders { get; set; }
 
-
-        private static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
-        {
-            // Unix timestamp is seconds past epoch
-            System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
-            dtDateTime = dtDateTime.AddSeconds(unixTimeStamp).ToLocalTime();
-            return dtDateTime;
-        }
 
         public static void buildCompContenders()
         {
@@ -59,7 +52,7 @@ namespace MuhAimLabScoresViewer
                             var compStartDate = DateTime.Parse(currentComp.Parts[i].Startdate);
 
                             //if (playdate < compStartDate || playdate > compPartEnddate) continue;
-                            if (playdate < compStartDate.AddHours(-12) || playdate > compPartEnddate.AddHours(12)) continue;
+                            if (playdate < compStartDate.AddHours(-12) || playdate > compPartEnddate.AddHours(12)) continue; // <--- CURRENT TIMEFRAME LIMITATIONS
 
                             var existingPlayer = currentComp.competitionContenders.FirstOrDefault(c => c.klutchId == player.klutchId);
                             if (existingPlayer == null) //create new

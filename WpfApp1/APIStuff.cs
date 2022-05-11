@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using static MuhAimLabScoresViewer.MainWindow;
 using System.Windows;
+using static MuhAimLabScoresViewer.ObjectsAndStructs;
 
 namespace MuhAimLabScoresViewer
 {
@@ -65,8 +66,6 @@ namespace MuhAimLabScoresViewer
 
             return call;
         }
-
-
 
         public static async Task<Item> getCompTaskLeaderboard(string apicall)
         {

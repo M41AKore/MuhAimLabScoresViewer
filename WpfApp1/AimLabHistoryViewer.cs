@@ -11,6 +11,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using static MuhAimLabScoresViewer.Helper;
+using static MuhAimLabScoresViewer.ObjectsAndStructs;
 
 namespace MuhAimLabScoresViewer
 {
@@ -18,7 +20,7 @@ namespace MuhAimLabScoresViewer
     {
         private static List<ScenarioHistory> Scenarios;
 
-        public static void sortTasks(HistoryEntry[] historyEntries)
+        public static void sortTasks(HistoryEntry1[] historyEntries)
         {
             Scenarios = new List<ScenarioHistory>();
 
@@ -38,60 +40,22 @@ namespace MuhAimLabScoresViewer
 
                 existing.Plays.Add(new Play()
                 {
-                    Date = historyEntry.create_date,
+                    DateString = historyEntry.create_date,
+                    Date = DateTime.Parse(historyEntry.create_date),
                     Score = historyEntry.score,
                     Accuracy = "", //parse performance item for this
                 });
             }
 
+            Scenarios.ForEach(s => s.Plays = s.Plays.OrderBy(p => p.Date).ToList()); //make sure they're in timely order
+
             createScenariosGUI();
         }
-
-        public static string getTaskNameFromLevelID(string levelid, string workshopid)
-        {
-            if (!Directory.Exists(MainWindow.currentSettings.SteamLibraryPath)) return null;
-
-            DirectoryInfo[] dirs = new DirectoryInfo(MainWindow.currentSettings.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
-            foreach (var dir in dirs)
-            {
-                if (!string.IsNullOrEmpty(workshopid) && dir.Name != workshopid) continue;
-
-                foreach (var subdir in dir.GetDirectories())
-                    if (subdir.Name == "Levels")
-                        foreach (var file in subdir.GetDirectories()[0].GetFiles())
-                            if (file.Name == "level.es3")
-                            {
-                                var content = File.ReadAllText(file.FullName);
-                                if (content.Contains(levelid)) return getTaskNameFromES3(content);
-                            }
-            }
-                
-
-            return null;
-        }
-        private static string getTaskNameFromES3(string filecontent)
-        {
-            var start = filecontent.IndexOf("contentMetadata");
-            var relevant = filecontent.Substring(start, filecontent.IndexOf("category") - start);
-            var lines = relevant.Split(new string[] { "\",", "{", "}" }, StringSplitOptions.RemoveEmptyEntries);
-            var relevantline = lines.FirstOrDefault(l => l.Contains("label"));      
-            var result = uglyCleanup(relevantline);
-            return result;
-        }
-        private static string uglyCleanup(string s)
-        {
-            s = s.Substring(s.IndexOf(':'), s.Length - s.IndexOf(':'));
-            s = s.Trim(new char[] { ':', '\\', '"' });
-            s = s.Trim('"');
-            s = s.Replace('"', ' ');
-            s = s.Trim();
-            //seems to do it...
-            return s;
-        }
-
-
+    
         private static void createScenariosGUI()
         {
+            MainWindow.Instance.scenariosStacky.Children.Clear();
+
             for (int i = 0; i < Scenarios.Count; i++)
             {
                 var btn = new Button()
@@ -246,42 +210,5 @@ namespace MuhAimLabScoresViewer
 
             return null;
         }
-    }
-
-    public class ScenarioHistory
-    {
-        public string Identification;
-        public string Name;
-        public List<Play> Plays;
-    }
-
-    public class Play
-    {
-        public string Date;
-        public string Score;
-        public string Accuracy;
-    }
-
-    public class Holder
-    {
-        public double X { get; set; }
-        public double Y { get; set; }
-        public Point Point { get; set; }
-
-        public Holder()
-        {
-        }
-    }
-
-    public class Value
-    {
-        public double X { get; set; }
-        public double Y { get; set; }
-
-        public Value(double x, double y)
-        {
-            X = x;
-            Y = y;
-        }
-    }
+    }  
 }
