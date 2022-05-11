@@ -58,7 +58,6 @@ namespace MuhAimLabScoresViewer
 
         public DateTime nextEndingPart_DateTime_forTimer;
         Task countdownTimerTask = null;
-        bool updateCountdown = false;
 
         ScreenCaptureNvenc recorder = null;
         string outputFileName;
@@ -467,14 +466,15 @@ namespace MuhAimLabScoresViewer
             else showMessageBox("please enter 'SteamLibraryPath' in Settings!");
         }
 
+        //merge these into one pls
         private async void launchBenchmarkUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
         {
             timer.Restart();
+
             List<Task> tasks = new List<Task>();
             foreach (var call in calllist)
                 tasks.Add(Task.Run(async () => await APIStuff.getHighscore(call).ContinueWith(result => receiver(result)))); // updateBenchmarkWithHighscore(result));
 
-            //after updating all scores, calculate rank
             await Task.WhenAll(tasks.ToArray());
             string rankName = Benchmark.calculateBenchmarkRank(benchStacky);
             Txt_BenchmarkRank.Text = rankName;
@@ -486,7 +486,7 @@ namespace MuhAimLabScoresViewer
             timer.Restart();
             List<Task> tasks = new List<Task>();
             foreach (var call in calllist)
-                tasks.Add(Task.Run(async () => await APIStuff.getHighscore(call).ContinueWith(result => receiver(result)))); // updateBenchmarkWithHighscore(result));
+                tasks.Add(Task.Run(async () => await APIStuff.getHighscore(call).ContinueWith(result => receiver(result))));
 
             await Task.WhenAll(tasks.ToArray());
             //
@@ -701,6 +701,7 @@ namespace MuhAimLabScoresViewer
         }
         private void updateBenchmarkWithHighscore(Task<HighscoreUpdateCall> call)
         {
+            timer.Restart();
             Trace.WriteLine("updating '" + call.Result.taskname + "'...");
             var targetName = calculateUIScoreItemName(call);
             if (targetName != null)
@@ -712,6 +713,7 @@ namespace MuhAimLabScoresViewer
                         tb.Text = call.Result.highscore;
                 });
             }
+            Trace.WriteLine($"updated '{call.Result.taskname}' in {timer.ElapsedMilliseconds}ms!");
         }
 
         //personal competition score display
@@ -787,25 +789,22 @@ namespace MuhAimLabScoresViewer
         private void updateCompetitionUIWithHighscore(Task<HighscoreUpdateCall> call)
         {
             Trace.WriteLine("updating '" + call.Result.taskname + "'...");
-
-            this.Dispatcher.Invoke(() =>
-            {
-                //get id name
-                string textblockID = "";
-
-                for (int i = 0; i < currentComp.Parts.Length; i++)
-                    for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
-                        if (currentComp.Parts[i].Scenarios[j].TaskName == call.Result.taskname)
-                            textblockID = $"score_{i}_{j}";
-
-
-                //find texblock with matching ID
-                var field = findPersonalCompetitionStatsScoreField(textblockID);
-                if (field != null) field.Text = call.Result.highscore;
-
-                return;
-
-            });
+            
+            //get id name
+            string textblockID = "";
+            for (int i = 0; i < currentComp.Parts.Length; i++)
+                for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
+                    if (currentComp.Parts[i].Scenarios[j].TaskName == call.Result.taskname)
+                    {
+                        textblockID = $"score_{i}_{j}";
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            //find texblock with matching ID
+                            var field = findPersonalCompetitionStatsScoreField(textblockID);
+                            if (field != null) field.Text = call.Result.highscore;
+                        });
+                        return;
+                    } 
         }
         public TextBlock findPersonalCompetitionStatsScoreField(string fieldname)
         {
@@ -858,7 +857,7 @@ namespace MuhAimLabScoresViewer
             Competition_Title.FontWeight = FontWeights.Bold;
             CompInfoDocky.Children.Clear();
             myDocky.Children.Clear();
-            addOtherCompetitionGUI(CompInfoDocky); //timer
+            addCompetitionTimerGUI(CompInfoDocky); //timer
             addCompetitionLeaderboardGUIHeaders(CompInfoDocky); // headers
             addCompetitionLeaderboardGUIPlayerData(myDocky); // playerdata
         }
@@ -989,7 +988,7 @@ namespace MuhAimLabScoresViewer
         }
 
         //other competition info
-        private void addOtherCompetitionGUI(DockPanel boardDocky)
+        private void addCompetitionTimerGUI(DockPanel boardDocky)
         {
             string? s = null;
             PartExpiraton nextEndingPart = null;
@@ -1014,81 +1013,69 @@ namespace MuhAimLabScoresViewer
 
             if (s == null && nextEndingPart == null)
             {
-                s = "None";
-                if (countdownTimerTask != null)
-                {
-                    if (countdownTimerTask.Status == TaskStatus.Running)
-                    {
-                        updateCountdown = false;
-                        countdownTimerTask.Dispose();
-                        if (!string.IsNullOrEmpty(lbl_partendtimer.Text)) lbl_partendtimer.Text = "not active";
-                    }
-                }
+                lbl_activepart.Text = "None";
+                lbl_endson.Text = "Ended on:";
+                var end = currentComp.Parts.LastOrDefault()?.Enddate;
+                lbl_partendtimer.Text = end != null ? $"{end} (UTC)" : "Unknown";
+                if (countdownTimerTask != null && countdownTimerTask.Status == TaskStatus.Running) countdownTimerTask.Dispose();
             }
             else
             {
+                lbl_activepart.Text = s;
                 if (nextEndingPart.timeTillExpiration > TimeSpan.FromHours(48))
                 {
-                    lbl_endson.Text = "ends on:";
+                    lbl_endson.Text = "Ends on:";
+                    lbl_partendtimer.Foreground = Brushes.Black;
                     lbl_partendtimer.Text = $"{nextEndingPart.part.Enddate} (UTC)";
                 }
                 else
                 {
-                    if (nextEndingPart.timeTillExpiration > TimeSpan.Zero)
-                    {
-                        lbl_endson.Text = "ends in:";
-                        int hours = nextEndingPart.timeTillExpiration.Days > 0 ? nextEndingPart.timeTillExpiration.Hours + 24 : nextEndingPart.timeTillExpiration.Hours;
-                        lbl_partendtimer.Text = $"{hours}:{nextEndingPart.timeTillExpiration.Minutes}:{nextEndingPart.timeTillExpiration.Seconds}";
+                    lbl_endson.Text = "Ends in:";
+                    int hours = nextEndingPart.timeTillExpiration.Days > 0 ? nextEndingPart.timeTillExpiration.Hours + 24 : nextEndingPart.timeTillExpiration.Hours;
+                    lbl_partendtimer.Text = $"{hours}:{nextEndingPart.timeTillExpiration.Minutes}:{nextEndingPart.timeTillExpiration.Seconds}";
 
-                        //timer
-                        nextEndingPart_DateTime_forTimer = DateTime.Parse(nextEndingPart.part.Enddate);
-                        updateCountdown = true;
-                        countdownTimerTask = Task.Run(() =>
-                        {
-                            while (!updateCountdownTimer())
-                                Thread.Sleep(1000);
-                        });
-                    }
-                    else
+                    //timer
+                    nextEndingPart_DateTime_forTimer = DateTime.Parse(nextEndingPart.part.Enddate);
+                    countdownTimerTask = Task.Run(() =>
                     {
-                        updateCountdown = false;
-                        lbl_partendtimer.Text = "not active!";
-                    }
+                        while (nextEndingPart_DateTime_forTimer > DateTime.UtcNow)
+                        {
+                            updateCountdownTimer();
+                            Thread.Sleep(1000);
+                        }
+
+                        //time over, set final output
+                        this.Dispatcher.Invoke(() =>
+                        {
+                            if(nextEndingPart.part == currentComp.Parts.LastOrDefault()) //last part, comp over
+                            {
+                                lbl_activepart.Text = "None";
+                                lbl_endson.Text = "Ended on:";
+                                var end = nextEndingPart.part?.Enddate;
+                                lbl_partendtimer.Foreground = Brushes.Black;
+                                lbl_partendtimer.Text = end != null ? $"{end} (UTC)" : "Unknown";
+                            }
+                            else addCompetitionTimerGUI(boardDocky); //not last part, go to next 
+                        });
+                    });
                 }
             }
-            lbl_activepart.Text = s;
         }
-        private bool updateCountdownTimer()
+        private void updateCountdownTimer()
         {
-            if (!updateCountdown) return false;
-
-            var isOver = false;
-            this.Dispatcher.Invoke(() =>
+            var timeLeft = nextEndingPart_DateTime_forTimer - DateTime.UtcNow;
+            if (timeLeft > TimeSpan.Zero)
             {
-                if (!updateCountdown)
+                int hoursTotal = timeLeft.Days > 0 ? timeLeft.Hours + 24 : timeLeft.Hours;
+                string hours = hoursTotal < 10 ? $"0{hoursTotal}" : hoursTotal.ToString();
+                string minutes = timeLeft.Minutes < 10 ? $"0{timeLeft.Minutes}" : timeLeft.Minutes.ToString();
+                string seconds = timeLeft.Seconds < 10 ? $"0{timeLeft.Seconds}" : timeLeft.Seconds.ToString();
+                this.Dispatcher.Invoke(() =>
                 {
-                    isOver = true;
-                    lbl_partendtimer.Text = "over";
-                    return;
-                }
-
-                var timeLeft = nextEndingPart_DateTime_forTimer - DateTime.UtcNow;
-                if (timeLeft > TimeSpan.Zero)
-                {
-                    int hoursTotal = timeLeft.Days > 0 ? timeLeft.Hours + 24 : timeLeft.Hours;
-                    string hours = hoursTotal < 10 ? $"0{hoursTotal}" : hoursTotal.ToString();
-                    string minutes = timeLeft.Minutes < 10 ? $"0{timeLeft.Minutes}" : timeLeft.Minutes.ToString();
-                    string seconds = timeLeft.Seconds < 10 ? $"0{timeLeft.Seconds}" : timeLeft.Seconds.ToString();
                     lbl_partendtimer.Text = $"{hours}:{minutes}:{seconds}";
                     if (hoursTotal < 1) lbl_partendtimer.Foreground = Brushes.Red;
-                }
-                else
-                {
-                    isOver = true;
-                    updateCountdown = false;
-                }
-            });
-            return isOver;
+                });           
+            }
         }
 
         //klutchId finder
@@ -1096,11 +1083,8 @@ namespace MuhAimLabScoresViewer
         {
             if (!string.IsNullOrEmpty(currentSettings.SteamLibraryPath) && Directory.Exists(currentSettings.SteamLibraryPath))
             {
-                string providedName = klutchIdFinder_Username.Text;
-                string providedScenario = klutchIdFinder_Scenario.Text;
-
-                string call = buildAPICallFromTaskName(providedScenario);
-                if (call != null) APIStuff.httpstuff(call).ContinueWith(item => findklutchId(item.Result.results, providedName));
+                string call = buildAPICallFromTaskName(klutchIdFinder_Username.Text);
+                if (call != null) APIStuff.httpstuff(call).ContinueWith(item => findklutchId(item.Result.results, klutchIdFinder_Scenario.Text));
             }
         }
         private void findklutchId(Result[] results, string playername)

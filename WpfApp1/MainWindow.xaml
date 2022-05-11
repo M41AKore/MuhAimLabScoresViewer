@@ -152,7 +152,7 @@
                             <TextBlock TextAlignment="Left" Name="lbl_activepart"></TextBlock>
                         </DockPanel>
                         <DockPanel Width="220" HorizontalAlignment="Left">
-                            <TextBlock TextAlignment="Left" Width="60" Name="lbl_endson" Margin="0,0,10,0"></TextBlock>
+                            <TextBlock TextAlignment="Left" Width="60" Name="lbl_endson" Margin="0,0,10,0">Ends on:</TextBlock>
                             <TextBlock TextAlignment="Left" Name="lbl_partendtimer"></TextBlock>
                         </DockPanel>
                     </StackPanel>
