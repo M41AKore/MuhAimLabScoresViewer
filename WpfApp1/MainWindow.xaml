@@ -394,6 +394,7 @@
 
         </StackPanel>
 
+        <!-- AutoRecord footer -->
         <DockPanel Grid.Column="0" Grid.Row="2" Name="AutoRecordBufferBar" Visibility="{Binding Path=AutoRecord, Converter={StaticResource BoolToVisHide}}" 
                    Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
             <Label VerticalContentAlignment="Center" VerticalAlignment="Center">AutoRecord Status:</Label>

@@ -20,6 +20,34 @@ namespace MuhAimLabScoresViewer
     {
         private static List<ScenarioHistory> Scenarios;
 
+        public static AimLabHistory getData(string filepath)
+        {
+            var filecontent = File.ReadAllText(filepath);
+            if (filecontent.StartsWith("[["))
+            {
+                filecontent = filecontent.Substring(1, filecontent.Length - 2);
+                if (filecontent.EndsWith("]]"))
+                {
+                    filecontent = filecontent.Substring(0, filecontent.Length - 2);
+                }
+            }
+            filecontent = "{ \"historyEntries\":" + filecontent + "}";
+
+            try
+            {
+                var item = JsonConvert.DeserializeObject<AimLabHistory>(filecontent);
+                if (item == null) MessageBox.Show("deserialization failed!");
+
+                return item;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+
+            return null;
+        }
+
         public static void sortTasks(HistoryEntry1[] historyEntries)
         {
             Scenarios = new List<ScenarioHistory>();
@@ -35,6 +63,7 @@ namespace MuhAimLabScoresViewer
                         Name = getTaskNameFromLevelID(historyEntry.taskName, historyEntry.workshopId), 
                         Plays = new List<Play>(),
                     };
+                    if(string.IsNullOrEmpty(existing.Name)) existing.Name = existing.Identification;
                     Scenarios.Add(existing);
                 }
 
@@ -48,6 +77,7 @@ namespace MuhAimLabScoresViewer
             }
 
             Scenarios.ForEach(s => s.Plays = s.Plays.OrderBy(p => p.Date).ToList()); //make sure they're in timely order
+            Scenarios = Scenarios.OrderBy(s => s.Name).ToList(); //order alphabetically
 
             createScenariosGUI();
         }
@@ -61,7 +91,7 @@ namespace MuhAimLabScoresViewer
                 var btn = new Button()
                 {
                     Name = $"HistoryScenarioButton_{i}",
-                    Content = !string.IsNullOrEmpty(Scenarios[i].Name) ? Scenarios[i].Name : Scenarios[i].Identification,
+                    Content = Scenarios[i].Name,
                     Width = 240,
                     Height = 20,
                     HorizontalAlignment = System.Windows.HorizontalAlignment.Left,
@@ -71,6 +101,7 @@ namespace MuhAimLabScoresViewer
                 MainWindow.Instance.scenariosStacky.Children.Add(btn);
             }
         }
+        
         public static void Btn_Click(object sender, RoutedEventArgs e)
         {
             var btn = sender as Button;
@@ -178,37 +209,6 @@ namespace MuhAimLabScoresViewer
             {
                 MainWindow.Instance.txt_Median.Text = orderedPlays[scenario.Plays.Count / 2].Score.ToString();
             }
-        }
-
-        public static AimLabHistory getData(string filepath)
-        {
-            var filecontent = File.ReadAllText(filepath);
-            if (filecontent.StartsWith("[["))
-            {
-                filecontent = filecontent.Substring(1, filecontent.Length - 2);
-                if (filecontent.EndsWith("]]"))
-                {
-                    filecontent = filecontent.Substring(0, filecontent.Length - 2);
-                }
-            }
-
-            filecontent = "{ \"historyEntries\":" + filecontent + "}";
-
-            try
-            {
-                var item = JsonConvert.DeserializeObject<AimLabHistory>(filecontent);
-                if (item == null)
-                {
-                    MessageBox.Show("deserialization failed!");
-                }
-                return item;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-
-            return null;
-        }
+        }  
     }  
 }

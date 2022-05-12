@@ -110,7 +110,7 @@ namespace MuhAimLabScoresViewer
             return result;
         }
 
-        public static string getTaskNameFromLevelID(string levelid, string workshopid)
+        public static string getTaskNameFromLevelID(string levelid, string workshopid, bool exclusive = true)
         {
             if (!Directory.Exists(MainWindow.currentSettings.SteamLibraryPath)) return null;
 
@@ -125,14 +125,34 @@ namespace MuhAimLabScoresViewer
                             if (file.Name == "level.es3")
                             {
                                 var content = File.ReadAllText(file.FullName);
+                                if(levelid == "CsLevel.morcaillionaire.rA Fours.R4KRU5")
+                                {
+
+                                }
                                 if (content.Contains(levelid))
-                                    return getTaskNameFromES3(content);
+                                {
+                                    string foundLevelId = getLevelIDFromES3(content);
+                                    if(foundLevelId == levelid || !exclusive) //with disabled "Yuki Aim - Gridshot"(label) counts as "gridshot"(id)
+                                    {
+                                        return getTaskNameFromES3(content);
+                                    }                                
+                                }
                             }
             }
 
-
             return null;
         }
+
+        private static string getLevelIDFromES3(string filecontent)
+        {
+            var start = filecontent.IndexOf("contentMetadata");
+            var relevant = filecontent.Substring(start, filecontent.IndexOf("category") - start);
+            var lines = relevant.Split(new string[] { "\",", "{", "}" }, StringSplitOptions.RemoveEmptyEntries);
+            var relevantline = lines.FirstOrDefault(l => l.Contains("id"));
+            var result = uglyCleanup(relevantline);
+            return result;
+        }
+
         private static string getTaskNameFromES3(string filecontent)
         {
             var start = filecontent.IndexOf("contentMetadata");

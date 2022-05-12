@@ -70,9 +70,7 @@ namespace MuhAimLabScoresViewer
 
             var settings = XmlSerializer.deserializeXml<Settings>("./settings.xml");
             if (settings != null)
-            {
-                currentSettings = settings;
-                viewModel.SteamLibraryPath = settings.SteamLibraryPath;
+            {              
                 viewModel.klutchId = settings.klutchId;
                 if (settings.RecordingHotKey != null) MainWindow.Instance.registerRecordingHotkey(settings);
                 MainWindow.Instance.recordHotkeySet.Content = settings.RecordingHotKey.ToString();
@@ -86,14 +84,19 @@ namespace MuhAimLabScoresViewer
                 viewModel.ColorBenchmarkRanksAndScores = settings.ColorBenchmarkRanksAndScores;
                 viewModel.LiveTrackerEnabled = settings.LiveTrackerEnabled;
                 viewModel.LiveTrackerMinutes = settings.LiveTrackerMinutes;
+                currentSettings = settings;
 
+                if (settings.SteamLibraryPath != null && Directory.Exists(settings.SteamLibraryPath)) viewModel.SteamLibraryPath = settings.SteamLibraryPath;
                 if (settings.lastBenchmarkFile != null && File.Exists(settings.lastBenchmarkFile)) MainWindow.Instance.HandleFile(settings.lastBenchmarkFile);
                 if (settings.lastCompetitionFile != null && File.Exists(settings.lastCompetitionFile)) MainWindow.Instance.HandleFile(settings.lastCompetitionFile);
             }
         }
         public static void SaveSettings()
         {
-            if (viewModel.SteamLibraryPath != null && Directory.Exists(viewModel.SteamLibraryPath)) currentSettings.SteamLibraryPath = viewModel.SteamLibraryPath;
+            if (Directory.Exists(viewModel.SteamLibraryPath) || string.IsNullOrEmpty(viewModel.SteamLibraryPath)) currentSettings.SteamLibraryPath = viewModel.SteamLibraryPath;
+            if (File.Exists(viewModel.LastBenchmarkPath) || string.IsNullOrEmpty(viewModel.LastBenchmarkPath)) currentSettings.lastBenchmarkFile = viewModel.LastBenchmarkPath;
+            if (File.Exists(viewModel.LastCompetitionPath) || string.IsNullOrEmpty(viewModel.LastCompetitionPath)) currentSettings.lastCompetitionFile = viewModel.LastCompetitionPath;
+
             currentSettings.klutchId = viewModel.klutchId;
             currentSettings.alsoTakeScreenshot = viewModel.onSaveReplayTakeScreenshot;
             currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
@@ -106,8 +109,6 @@ namespace MuhAimLabScoresViewer
             currentSettings.LiveTrackerEnabled = viewModel.LiveTrackerEnabled;
             currentSettings.LiveTrackerMinutes = viewModel.LiveTrackerMinutes;
 
-            if (viewModel.LastBenchmarkPath != null && File.Exists(viewModel.LastBenchmarkPath)) currentSettings.lastBenchmarkFile = viewModel.LastBenchmarkPath;
-            if (viewModel.LastCompetitionPath != null && File.Exists(viewModel.LastCompetitionPath)) currentSettings.lastCompetitionFile = viewModel.LastCompetitionPath;
             XmlSerializer.serializeToXml<Settings>(currentSettings, settingsPath);
         }        
     }

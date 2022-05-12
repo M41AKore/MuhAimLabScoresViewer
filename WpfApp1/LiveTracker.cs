@@ -152,6 +152,8 @@ namespace MuhAimLabScoresViewer
         public static void createLiveTrackerGUI()
         {           
             currentScenario = determineCurrentScenario();
+            if(currentScenario != null) currentScenario.Name = getTaskNameFromLevelID(currentScenario.Identification, null);
+
             MainWindow.Instance.Dispatcher.Invoke(() =>
             {
                 if (currentScenario == null) MainWindow.Instance.TrackerGraphTitle.Content = "No plays found yet in given Session window!";

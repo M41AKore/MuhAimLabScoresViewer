@@ -902,6 +902,7 @@ namespace MuhAimLabScoresViewer
                         {
                             Name = $"score_{i}_{j}_{y}",
                             Text = currentComp.competitionContenders[i].partResults[j].taskResults[y].score.ToString(),
+                            ToolTip = currentComp.competitionContenders[i].partResults[j].taskResults[y].points.ToString("0.##"),
                             Width = 40,
                             HorizontalAlignment = HorizontalAlignment.Center,
                             TextAlignment = TextAlignment.Center,
