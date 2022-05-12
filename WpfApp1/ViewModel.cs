@@ -10,6 +10,8 @@ namespace MuhAimLabScoresViewer
 {
     public class ViewModel : INotifyPropertyChanged
     {
+        private string _SteamLibraryPath;
+        private string _klutchId;
         private Visibility _borderVisible = Visibility.Collapsed;
         private bool _IsRecording = false;
         private string _ReplayBufferSeconds = "90s";
@@ -25,6 +27,24 @@ namespace MuhAimLabScoresViewer
         private int _LiveTrackerMinutes;
         private bool _LiveTrackerEnabled;
 
+        public string SteamLibraryPath
+        {
+            get => _SteamLibraryPath;
+            set
+            {
+                _SteamLibraryPath = value;
+                NotifyPropertyChanged("SteamLibraryPath");
+            }
+        }
+        public string klutchId
+        {
+            get => _klutchId;
+            set
+            {
+                _klutchId = value;
+                NotifyPropertyChanged("klutchId");
+            }
+        }
         public Visibility BorderVisible
         {
             get => _borderVisible;
@@ -165,6 +185,7 @@ namespace MuhAimLabScoresViewer
                 NotifyPropertyChanged("LiveTrackerMinutes");
             }
         }
+     
 
         private void NotifyPropertyChanged(string info)
         {

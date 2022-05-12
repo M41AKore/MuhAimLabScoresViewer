@@ -283,19 +283,19 @@
                             <RowDefinition/>
                         </Grid.RowDefinitions>
 
-                        <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">SteamLibrary Path:</Label>
-                        <TextBox Grid.Row="0" Grid.Column="1" Name="SteamLibraryInput" LostFocus="SteamLibraryInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                        <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" ToolTip="Where Steam is saved on your PC.&#x0a;The folder above steamapps">SteamLibrary Path:</Label>
+                        <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Path=SteamLibraryPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                        <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center">klutchId:</Label>
-                        <TextBox Grid.Row="1" Grid.Column="1" Name="klutchIdInput" LostFocus="klutchIdInput_LostFocus" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                        <Label Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" ToolTip="Use the klutchId finder below">klutchId:</Label>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Path=klutchId}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                        <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Last Benchmark Path:</Label>
+                        <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" ToolTip="This file will be loaded on startup" >Last Benchmark Path:</Label>
                         <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=LastBenchmarkPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
                         <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Color Ranks &amp; Scores:</Label>
                         <CheckBox Grid.Row="3" Grid.Column="1" IsChecked="{Binding Path=ColorBenchmarkRanksAndScores}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                        <Label Grid.Row="4" Grid.Column="0" VerticalAlignment="Center">Last Competition Path:</Label>
+                        <Label Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" ToolTip="This file will be loaded on startup">Last Competition Path:</Label>
                         <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Path=LastCompetitionPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
                         <Label Grid.Row="5" Grid.Column="0" VerticalAlignment="Center">Live Tracker:</Label>
@@ -335,6 +335,8 @@
                                 <RowDefinition/>
                                 <RowDefinition/>
                                 <RowDefinition/>
+                                <RowDefinition/>
+                                <RowDefinition/>
                             </Grid.RowDefinitions>
 
                             <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Auto-Record Highscores:</Label>
@@ -344,17 +346,21 @@
                                ToolTip="also record runs where the score is equal to your existing highscore, but with different accuracy etc.">Also Highscore Duplicates:</Label>
                             <CheckBox Grid.Row="1" Grid.Column="1" IsChecked="{Binding Path=AutoRecordDuplicates}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                            <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">OBS Recording Hotkey:</Label>
+                            <Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" 
+                                   ToolTip="The keypress to simulate to trigger OBS to save the replay buffer.&#x0a;Must match this key in OBS settings!">OBS Recording Hotkey:</Label>
                             <DockPanel Grid.Row="2" Grid.Column="1">
                                 <TextBox Text="{Binding Path=OBS_Key}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
                                 <Button Margin="5,0,0,0" Height="20" Click="Button_Click_3" HorizontalAlignment="Left" VerticalAlignment="Center" Width="40">Test</Button>
                             </DockPanel>
 
                             <!--<Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
-                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Path=ReplaysPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>-->
 
-                            <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Screenshots Path:</Label>
-                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Path=ScreenshotsPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>-->
+                            <Label Grid.Row="3" Grid.Column="0" VerticalAlignment="Center">Take Screenshot:</Label>
+                            <CheckBox Grid.Row="3" Grid.Column="1" IsChecked="{Binding Path=onSaveReplayTakeScreenshot}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                            <Label Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" ToolTip="If not set, screenshots will be saved in app directory.">Screenshots Path:</Label>
+                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Path=ScreenshotsPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
                         </Grid>
                     </Border>
                 </StackPanel>
@@ -388,19 +394,21 @@
 
         </StackPanel>
 
-        <DockPanel Grid.Column="0" Grid.Row="2" Name="AutoRecordBufferBar" Visibility="{Binding Path=AutoRecord, Converter={StaticResource BoolToVisHide}}" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+        <DockPanel Grid.Column="0" Grid.Row="2" Name="AutoRecordBufferBar" Visibility="{Binding Path=AutoRecord, Converter={StaticResource BoolToVisHide}}" 
+                   Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
             <Label VerticalContentAlignment="Center" VerticalAlignment="Center">AutoRecord Status:</Label>
 
-            <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" Visibility="{Binding Path=AutoRecord, Converter={StaticResource BoolToVisHide}}">
+            <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="580" Visibility="{Binding Path=AutoRecord, Converter={StaticResource BoolToVisHide}}">
                 <Button VerticalAlignment="Center" Background="Transparent">
                     <Image Source="Images/redsign.png" Height="15" Width="15"></Image>
                 </Button>
-                <TextBlock Name="autoRecordStatus_Output" HorizontalAlignment="Left" VerticalAlignment="Center" Width="350">Listening...</TextBlock>
+                <TextBlock Name="autoRecordStatus_Output" HorizontalAlignment="Left" VerticalAlignment="Center" Width="350" Margin="0,0,10,0">Listening...</TextBlock>
+                <TextBlock Name="autoRecordStatus_Output2" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"></TextBlock>
             </DockPanel>
         </DockPanel>
 
-        <!-- not active -->
-        <DockPanel Grid.Column="0" Grid.Row="2" Name="ReplayBufferBar" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
+        <!-- not active {Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}-->
+        <DockPanel Grid.Column="0" Grid.Row="2" Name="ReplayBufferBar" Visibility="Collapsed" Background="#aaa" VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Margin="0,0,0,0">
             <Label VerticalContentAlignment="Center" VerticalAlignment="Center">Replaybuffer:</Label>
 
             <DockPanel VerticalAlignment="Center" HorizontalAlignment="Left" Width="120" Visibility="{Binding Path=IsRecording, Converter={StaticResource BoolToVisHide}}">

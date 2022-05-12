@@ -54,8 +54,11 @@ namespace MuhAimLabScoresViewer
                     Item item = JsonConvert.DeserializeObject<Item>(responseBody);
 
                     foreach (var r in item.results)
-                        if (r.klutchId == currentSettings.klutchId)
+                        if (r.klutchId == viewModel.klutchId)
+                        {
                             call.highscore = r.score.ToString();
+                            break;
+                        }                          
                 }
                 catch (HttpRequestException e)
                 {

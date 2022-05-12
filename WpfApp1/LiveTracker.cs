@@ -82,7 +82,7 @@ namespace MuhAimLabScoresViewer
                                                                                                                                                       
                 detectNewHighscore(); //for autorecord
 
-                if(MainWindow.viewModel.LiveTrackerEnabled) createLiveTrackerGUI();
+                if(viewModel.LiveTrackerEnabled) createLiveTrackerGUI();
 
                 return true;
 
@@ -102,9 +102,12 @@ namespace MuhAimLabScoresViewer
 
             var results = selectQuery("SELECT * FROM TaskData ORDER BY createDate DESC"); //find SQL "LIMIT BY date" or so?
             var rows = results.Select();
+        
+            var compareSpan = TimeSpan.FromMinutes(MainWindow.viewModel.LiveTrackerMinutes);
+            var relevant = rows.Where(r => DateTime.TryParse(r["createDate"].ToString(), out DateTime date) && DateTime.UtcNow - date < compareSpan).ToList();
 
-            var relevant = rows.Where(r => DateTime.Now - DateTime.Parse(r["createDate"].ToString()) < TimeSpan.FromMinutes(MainWindow.viewModel.LiveTrackerMinutes)).ToList();
-            var last = relevant.FirstOrDefault();
+            var orderedRelevant = relevant.OrderByDescending(r => DateTime.Parse(r["createDate"].ToString())).ToList();
+            var last = orderedRelevant.FirstOrDefault();
             
             if (last != null)
             {
@@ -122,15 +125,17 @@ namespace MuhAimLabScoresViewer
                     },
                 };
 
-                for (int i = 0; i < relevant.Count; i++)
+                for (int i = 0; i < orderedRelevant.Count; i++)
                 {
-                    if (relevant[i]["taskName"].ToString() == last["taskName"])
+                    if(orderedRelevant[i] == last) continue;
+
+                    if (orderedRelevant[i]["taskName"].ToString() == last["taskName"].ToString())
                     {
                         current.Plays.Add(new Play()
                         {
-                            DateString = relevant[i]["createDate"].ToString(),
-                            Date = DateTime.Parse(relevant[i]["createDate"].ToString()),
-                            Score = relevant[i]["score"].ToString(),
+                            DateString = orderedRelevant[i]["createDate"].ToString(),
+                            Date = DateTime.Parse(orderedRelevant[i]["createDate"].ToString()),
+                            Score = orderedRelevant[i]["score"].ToString(),
                             //Accuracy = relevant[i]["accuracy"].ToString(), //see comment above 
                         });
                     }
@@ -147,17 +152,22 @@ namespace MuhAimLabScoresViewer
         public static void createLiveTrackerGUI()
         {           
             currentScenario = determineCurrentScenario();
-            if(currentScenario == null) MainWindow.Instance.TrackerGraphTitle.Content = "No plays found yet in given Session window!";
-            else
+            MainWindow.Instance.Dispatcher.Invoke(() =>
             {
-                MainWindow.Instance.TrackerGraphTitle.Content = !string.IsNullOrEmpty(currentScenario.Name) ? currentScenario.Name : currentScenario.Identification;
-                MainWindow.Instance.trackergraphStacky.Children.Clear();
-                createDataPoints(currentScenario);
-            }          
+                if (currentScenario == null) MainWindow.Instance.TrackerGraphTitle.Content = "No plays found yet in given Session window!";
+                else
+                {
+                    MainWindow.Instance.TrackerGraphTitle.Content = !string.IsNullOrEmpty(currentScenario.Name) ? currentScenario.Name : currentScenario.Identification;
+                    MainWindow.Instance.trackergraphStacky.Children.Clear();
+                    createDataPoints(currentScenario);
+                }
+            });   
         }
 
         private static void createDataPoints(ScenarioHistory scenario)
         {
+            scenario.Plays = scenario.Plays.OrderBy(p => p.Date).ToList(); //left to right graph
+
             //scores plot
             FunctionSeries fs = new FunctionSeries();
             for (int i = 0; i < scenario.Plays.Count; i++)
@@ -266,27 +276,29 @@ namespace MuhAimLabScoresViewer
                                 //potentially still record duplicate score attempts
                                 if (newscore == playerResult.score && viewModel.AutoRecordDuplicates)
                                 {
-                                    MainWindow.Instance.displayAutoRecordStatusMessage($"New highscore of '{newscore}' detected! Telling OBS to save replaybuffer...");
-                                    simulateKeyPress(viewModel.OBS_Key);
+                                    doHighscoreRecordingStuff(newscore);
                                 }
-
-                                //OR, result hasn't made it to API yet, so only record if higher
-                                if (newscore > playerResult.score)
+                                else if (newscore > playerResult.score) //OR, result hasn't made it to API yet, so only record if higher
                                 {
-                                    MainWindow.Instance.displayAutoRecordStatusMessage($"New highscore of '{newscore}' detected! Telling OBS to save replaybuffer...");
-                                    simulateKeyPress(viewModel.OBS_Key);
+                                    doHighscoreRecordingStuff(newscore);
                                 }
                             }
                             else
                             {
                                 //last registered score seems to have set new API highscore, therefore we save replay
-                                MainWindow.Instance.displayAutoRecordStatusMessage($"New highscore of '{newscore}' detected! Telling OBS to save replaybuffer...");
-                                simulateKeyPress(viewModel.OBS_Key);
+                                doHighscoreRecordingStuff(newscore);
                             }
                         }
                     }
                 }
             }));
+        }
+
+        private static void doHighscoreRecordingStuff(int score)
+        {
+            MainWindow.Instance.displayAutoRecordStatusMessage($"New highscore of '{score}' detected!");
+            if (viewModel.onSaveReplayTakeScreenshot) MainWindow.Instance.takeScreenshot();
+            simulateKeyPress(viewModel.OBS_Key);
         }
 
         private bool checkDBfile()

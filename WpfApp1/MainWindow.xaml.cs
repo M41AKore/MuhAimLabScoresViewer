@@ -226,20 +226,12 @@ namespace MuhAimLabScoresViewer
             SettingsTab.Visibility = Visibility.Visible;
             SettingsButton_BottomBorder.Visibility = Visibility.Hidden;
 
-            this.Height = 500;
+            this.Height = 600;
             this.Width = 700;
         }
         private void TextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             if (e.Key == Key.Enter) getLeaderboardFor((sender as System.Windows.Controls.TextBox).Text);
-        }
-        private void SteamLibraryInput_LostFocus(object sender, RoutedEventArgs e)
-        {
-            currentSettings.SteamLibraryPath = (sender as System.Windows.Controls.TextBox).Text;
-        }
-        private void klutchIdInput_LostFocus(object sender, RoutedEventArgs e)
-        {
-            currentSettings.klutchId = (sender as System.Windows.Controls.TextBox).Text;
         }
         private void DragDropInput(object sender, System.Windows.DragEventArgs e) => getFileDrop(e);
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -412,14 +404,14 @@ namespace MuhAimLabScoresViewer
             timer.Start();
             string filename = filepath.Split('\\').Last();
 
-            if (!string.IsNullOrEmpty(currentSettings.SteamLibraryPath) && Directory.Exists(currentSettings.SteamLibraryPath))
+            if (!string.IsNullOrEmpty(viewModel.SteamLibraryPath) && Directory.Exists(viewModel.SteamLibraryPath))
             {
                 if (filename.ToLower().Contains("benchmark") || filename.ToLower().Contains("bench"))
                 {
-                    var newbench = XmlSerializer.deserializeXml<Benchmark>(filepath);
-                    if (newbench != null)
+                    try
                     {
-                        try
+                        var newbench = XmlSerializer.deserializeXml<Benchmark>(filepath);
+                        if (newbench != null)
                         {
                             currentBenchmark = newbench;
                             viewModel.LastBenchmarkPath = filepath;
@@ -427,40 +419,51 @@ namespace MuhAimLabScoresViewer
                             Benchmark.addBenchmarkScores(benchStacky);
                             loadBenchmarkToGUI(newbench);
                         }
-                        catch (Exception e)
-                        {
-                            showMessageBox(e.Message.ToString());
-                            currentBenchmark = null;
-                            viewModel.LastBenchmarkPath = null;
-                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.log("Error during benchmark loading!" + Environment.NewLine + e.Message.ToString());
+                        currentBenchmark = null;
+                        viewModel.LastBenchmarkPath = null;
+                        showMessageBox("Could not load this Benchmark file!");
                     }
                 }
                 else if (filename.ToLower().Contains("competition") || filename.ToLower().Contains("comp"))
                 {
-                    var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
-                    if (newcomp != null)
+                    try
                     {
-                        try
+                        var newcomp = XmlSerializer.deserializeXml<Competition>(filepath);
+                        if (newcomp != null)
                         {
                             currentComp = newcomp;
                             viewModel.LastCompetitionPath = filepath;
                             loadCompetitionToGUI();
                         }
-                        catch (Exception e)
-                        {
-                            showMessageBox(e.Message.ToString());
-                            currentComp = null;
-                            viewModel.LastCompetitionPath = null;
-                        }
                     }
+                    catch (Exception e)
+                    {
+                        Logger.log("Error during competition loading!" + Environment.NewLine + e.Message.ToString());
+                        currentComp = null;
+                        viewModel.LastCompetitionPath = null;
+                        showMessageBox("Could not load this Competition file!");
+                    }
+
                 }
                 else if (filename.ToLower().Contains("taskData") || filename.ToLower().Contains(".json"))
                 {
-                    if (File.Exists(filepath))
+                    try
                     {
-                        var item = AimLabHistoryViewer.getData(filepath);
-                        if (item != null) AimLabHistoryViewer.sortTasks(item.historyEntries);
+                        if (File.Exists(filepath))
+                        {
+                            var item = AimLabHistoryViewer.getData(filepath);
+                            if (item != null) AimLabHistoryViewer.sortTasks(item.historyEntries);
+                        }
                     }
+                    catch(Exception e)
+                    {
+                        Logger.log("Error during taskdata loading!" + Environment.NewLine + e.Message.ToString());
+                        showMessageBox("Could not load this TaskData file!");
+                    }                 
                 }
             }
             else showMessageBox("please enter 'SteamLibraryPath' in Settings!");
@@ -678,7 +681,7 @@ namespace MuhAimLabScoresViewer
 
             Trace.WriteLine("time for building datagrids and calls: " + timer.ElapsedMilliseconds);
 
-            if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchBenchmarkUpdates(calllist, updateBenchmarkWithHighscore);
+            if (!string.IsNullOrEmpty(viewModel.klutchId)) launchBenchmarkUpdates(calllist, updateBenchmarkWithHighscore);
             else showMessageBox("please set 'klutchId' in Settings!");
         }
         private string calculateUIScoreItemName(Task<HighscoreUpdateCall> call)
@@ -754,7 +757,8 @@ namespace MuhAimLabScoresViewer
                         Background = Brushes.White
                     });
 
-                    /*var parts = getAuthorIdAndWorkshopIdFromTaskName(currentComp.Parts[i].Scenarios[j].TaskName)?.Split(' ');
+                    //play button at end of line
+                    /**var parts = getAuthorIdAndWorkshopIdFromTaskName(currentComp.Parts[i].Scenarios[j].TaskName)?.Split(' ');
                     if (parts != null)
                     {
                         var btn = new Button()
@@ -781,7 +785,7 @@ namespace MuhAimLabScoresViewer
                 });
             }
 
-            if (!string.IsNullOrEmpty(currentSettings.klutchId)) launchCompetitionUpdates(calllist, updateCompetitionUIWithHighscore);
+            if (!string.IsNullOrEmpty(viewModel.klutchId)) launchCompetitionUpdates(calllist, updateCompetitionUIWithHighscore);
             else showMessageBox("please set 'klutchId' in Settings!");
 
             buildCompLeaderboard(calllist);
@@ -789,7 +793,7 @@ namespace MuhAimLabScoresViewer
         private void updateCompetitionUIWithHighscore(Task<HighscoreUpdateCall> call)
         {
             Trace.WriteLine("updating '" + call.Result.taskname + "'...");
-            
+
             //get id name
             string textblockID = "";
             for (int i = 0; i < currentComp.Parts.Length; i++)
@@ -804,7 +808,7 @@ namespace MuhAimLabScoresViewer
                             if (field != null) field.Text = call.Result.highscore;
                         });
                         return;
-                    } 
+                    }
         }
         public TextBlock findPersonalCompetitionStatsScoreField(string fieldname)
         {
@@ -1047,7 +1051,7 @@ namespace MuhAimLabScoresViewer
                         //time over, set final output
                         this.Dispatcher.Invoke(() =>
                         {
-                            if(nextEndingPart.part == currentComp.Parts.LastOrDefault()) //last part, comp over
+                            if (nextEndingPart.part == currentComp.Parts.LastOrDefault()) //last part, comp over
                             {
                                 lbl_activepart.Text = "None";
                                 lbl_endson.Text = "Ended on:";
@@ -1074,17 +1078,19 @@ namespace MuhAimLabScoresViewer
                 {
                     lbl_partendtimer.Text = $"{hours}:{minutes}:{seconds}";
                     if (hoursTotal < 1) lbl_partendtimer.Foreground = Brushes.Red;
-                });           
+                });
             }
         }
 
         //klutchId finder
         private void buildklutchIdCall()
         {
-            if (!string.IsNullOrEmpty(currentSettings.SteamLibraryPath) && Directory.Exists(currentSettings.SteamLibraryPath))
+            if (!string.IsNullOrEmpty(viewModel.SteamLibraryPath) && Directory.Exists(viewModel.SteamLibraryPath))
             {
-                string call = buildAPICallFromTaskName(klutchIdFinder_Username.Text);
-                if (call != null) APIStuff.httpstuff(call).ContinueWith(item => findklutchId(item.Result.results, klutchIdFinder_Scenario.Text));
+                var task = klutchIdFinder_Scenario.Text;
+                var playername = klutchIdFinder_Username.Text;
+                string call = buildAPICallFromTaskName(task);
+                if (call != null) APIStuff.httpstuff(call).ContinueWith(item => findklutchId(item.Result.results, playername));
             }
         }
         private void findklutchId(Result[] results, string playername)
@@ -1100,6 +1106,7 @@ namespace MuhAimLabScoresViewer
             }
             catch (Exception e)
             {
+                Logger.log($"FindklutchId Exception: User '{playername}' not found!");
                 showMessageBox(e.Message);
             }
         }
@@ -1154,23 +1161,32 @@ namespace MuhAimLabScoresViewer
                 this.Dispatcher.Invoke(() => replayBufferStatus_Output2.Text = "");
             });
         }
-        private void takeScreenshot()
+        public void takeScreenshot()
         {
             var bmpScreenshot = new Bitmap(Screen.PrimaryScreen.Bounds.Width, Screen.PrimaryScreen.Bounds.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
             var gfxScreenshot = Graphics.FromImage(bmpScreenshot);
             gfxScreenshot.CopyFromScreen(Screen.PrimaryScreen.Bounds.X, Screen.PrimaryScreen.Bounds.Y, 0, 0, Screen.PrimaryScreen.Bounds.Size, CopyPixelOperation.SourceCopy);
 
+            string savePath = null;
+            if (!string.IsNullOrEmpty(viewModel.ScreenshotsPath) && Directory.Exists(viewModel.ScreenshotsPath))
+            {
+                savePath = viewModel.ScreenshotsPath;
+            }
+            else
+            {
+                savePath = "./Screenshots";
+                Directory.CreateDirectory(savePath);              
+            }
+        
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-            if (viewModel.ScreenshotsPath != currentSettings.ScreenshotSavePath) currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
-            string savePath = currentSettings.ScreenshotSavePath != null ? currentSettings.ScreenshotSavePath : ".";
-            string screenshotpath = $"{savePath}/Screenshot{timestamp}.png";
+            string screenshotpath = $"{savePath}/Screenshot_{timestamp}.png";
             bmpScreenshot.Save(screenshotpath, System.Drawing.Imaging.ImageFormat.Png);
 
             Task.Run(() =>
             {
-                this.Dispatcher.Invoke(() => replayBufferStatus_Output2.Text = "Saved Screenshot to " + screenshotpath);
+                this.Dispatcher.Invoke(() => autoRecordStatus_Output2.Text = "Saved Screenshot to " + screenshotpath);
                 Thread.Sleep(3000);
-                this.Dispatcher.Invoke(() => replayBufferStatus_Output2.Text = "");
+                this.Dispatcher.Invoke(() => autoRecordStatus_Output2.Text = "");
             });
         }
     }

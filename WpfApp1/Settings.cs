@@ -72,8 +72,8 @@ namespace MuhAimLabScoresViewer
             if (settings != null)
             {
                 currentSettings = settings;
-                MainWindow.Instance.SteamLibraryInput.Text = settings.SteamLibraryPath;
-                MainWindow.Instance.klutchIdInput.Text = settings.klutchId;
+                viewModel.SteamLibraryPath = settings.SteamLibraryPath;
+                viewModel.klutchId = settings.klutchId;
                 if (settings.RecordingHotKey != null) MainWindow.Instance.registerRecordingHotkey(settings);
                 MainWindow.Instance.recordHotkeySet.Content = settings.RecordingHotKey.ToString();
                 viewModel.onSaveReplayTakeScreenshot = settings.alsoTakeScreenshot;
@@ -93,6 +93,8 @@ namespace MuhAimLabScoresViewer
         }
         public static void SaveSettings()
         {
+            if (viewModel.SteamLibraryPath != null && Directory.Exists(viewModel.SteamLibraryPath)) currentSettings.SteamLibraryPath = viewModel.SteamLibraryPath;
+            currentSettings.klutchId = viewModel.klutchId;
             currentSettings.alsoTakeScreenshot = viewModel.onSaveReplayTakeScreenshot;
             currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
             currentSettings.ReplaySavePath = viewModel.ReplaysPath;
