@@ -5,6 +5,7 @@ using OxyPlot.Series;
 using OxyPlot.Wpf;
 using System;
 using System.Collections.Generic;
+using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -209,6 +210,60 @@ namespace MuhAimLabScoresViewer
             {
                 MainWindow.Instance.txt_Median.Text = orderedPlays[scenario.Plays.Count / 2].Score.ToString();
             }
-        }  
+        }
+
+
+        private static SQLiteConnection sqlite;
+
+        public static void pullDataFromLocalDB()
+        {
+            try
+            {
+                Logger.log("reading db file...");
+                sqlite = new SQLiteConnection($"Data Source={LiveTracker.LocalDBFile}"); //;New=False;
+
+                var results = LiveTracker.selectQuery("SELECT * FROM TaskData ORDER BY taskName DESC");
+                var rows = results.Select();
+
+                Scenarios = new List<ScenarioHistory>();
+
+                foreach (var row in rows)
+                {
+                    string? taskname = row["taskName"].ToString();
+                    if (taskname == null) continue;
+
+                    var existing = Scenarios.FirstOrDefault(s => s.Identification == taskname);
+                    if (existing == null)
+                    {
+                        existing = new ScenarioHistory()
+                        {
+                            Identification = taskname,
+                            Name = getTaskNameFromLevelID(taskname, row["workshopId"].ToString()),
+                            Plays = new List<Play>(),
+                        };
+                        if (string.IsNullOrEmpty(existing.Name)) existing.Name = existing.Identification;
+                        Scenarios.Add(existing);
+                    }
+
+                    string? createDate = row["createDate"].ToString();
+                    existing.Plays.Add(new Play()
+                    {
+                        DateString = createDate,
+                        Date = createDate == null ? DateTime.MinValue : DateTime.Parse(createDate),
+                        Score = row["score"].ToString(),
+                        Accuracy = "", //parse performance item for this
+                    });
+                }
+
+                Scenarios.ForEach(s => s.Plays = s.Plays.OrderBy(p => p.Date).ToList()); //make sure they're in timely order
+                Scenarios = Scenarios.OrderBy(s => s.Name).ToList(); //order alphabetically
+
+                createScenariosGUI();
+            }
+            catch (Exception ex)
+            {
+                Logger.log("exception thrown when trying to read database file!" + Environment.NewLine + ex.Message);
+            }
+        }
     }  
 }

@@ -711,7 +711,7 @@ namespace MuhAimLabScoresViewer
             {
                 this.Dispatcher.Invoke(() =>
                 {
-                    TextBlock tb = Benchmark.findBenchmarkScoreFieldWithName(targetName, benchStacky);
+                    TextBlock tb = Benchmark.findBenchmarkScoreFieldWithName(targetName, benchStacky); //create a lookup table so this doesn't have to be found by UI thread
                     if (tb != null && int.TryParse(tb.Text, out int parentTaskScore) && parentTaskScore < int.Parse(call.Result.highscore))
                         tb.Text = call.Result.highscore;
                 });
@@ -1190,5 +1190,7 @@ namespace MuhAimLabScoresViewer
                 this.Dispatcher.Invoke(() => autoRecordStatus_Output2.Text = "");
             });
         }
+
+        private void Button_Click_4(object sender, RoutedEventArgs e) => AimLabHistoryViewer.pullDataFromLocalDB();
     }
 }
