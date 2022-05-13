@@ -1,41 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Data.SqlClient;
-using System.Net.Http;
 using System.IO;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System.Text.RegularExpressions;
-using System.Xml;
-using System.Xml.Serialization;
 using System.Diagnostics;
 using System.Threading;
-using System.Runtime.InteropServices;
 using System.Windows.Forms;
-//using System.Drawing;
+using System.Drawing;
 using MessageBox = System.Windows.MessageBox;
 using HorizontalAlignment = System.Windows.HorizontalAlignment;
 using Brushes = System.Windows.Media.Brushes;
-using Color = System.Windows.Media.Color;
 using Button = System.Windows.Controls.Button;
-using System.Drawing;
-using System.Data.SQLite;
-using System.Data;
-using static OBS.libobs;
 using static MuhAimLabScoresViewer.Helper;
 using static MuhAimLabScoresViewer.ObjectsAndStructs;
+using static OBS.libobs;
 
 namespace MuhAimLabScoresViewer
 {
@@ -84,7 +65,7 @@ namespace MuhAimLabScoresViewer
 
             Logger.setup();
             string LocalLowPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData).Replace("Roaming", "LocalLow");
-            LiveTracker.LocalDBFile = System.IO.Path.Combine(LocalLowPath, "Statespace\\aimlab_tb\\klutch.bytes");
+            LiveTracker.LocalDBFile = Path.Combine(LocalLowPath, "Statespace\\aimlab_tb\\klutch.bytes");
 
             Settings.loadSettings();
 
@@ -328,10 +309,8 @@ namespace MuhAimLabScoresViewer
             if (currentSettings.alsoTakeScreenshot) takeScreenshot();
             saveReplay();
         }
-        private void Button_Click_3(object sender, RoutedEventArgs e)
-        {
-            LiveTracker.simulateKeyPress(currentSettings.OBS_Hotkey);
-        }
+        private void Button_Click_3(object sender, RoutedEventArgs e) => LiveTracker.simulateKeyPress(currentSettings.OBS_Hotkey);      
+        private void Button_Click_4(object sender, RoutedEventArgs e) => AimLabHistoryViewer.pullDataFromLocalDB();
         private void OnActivated(object sender, EventArgs eventArgs)
         {
             windowActivated = true;
@@ -1198,7 +1177,5 @@ namespace MuhAimLabScoresViewer
                 this.Dispatcher.Invoke(() => autoRecordStatus_Output2.Text = "");
             });
         }
-
-        private void Button_Click_4(object sender, RoutedEventArgs e) => AimLabHistoryViewer.pullDataFromLocalDB();
     }
 }
