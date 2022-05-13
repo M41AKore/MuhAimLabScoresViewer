@@ -27,8 +27,10 @@ namespace MuhAimLabScoresViewer
         [XmlArrayItem("Category")]
         public Category[] Categories { get; set; }
 
-        public List<float> EnergyPerTask { get; set; }
-        public float TotalEnergy { get; set; }
+        public List<float> EnergyPerTask;
+        public float TotalEnergy;
+        public static List<KeyValuePair<string, TextBlock>> benchScoreFieldLookup;
+
 
         public static string calculateBenchmarkRank(StackPanel benchStacky)
         {
@@ -68,6 +70,7 @@ namespace MuhAimLabScoresViewer
 
             return rankTitle != null ? rankTitle : "unranked";
         }
+        
         public static void addBenchmarkGUIHeaders(StackPanel benchStacky)
         {
             benchStacky.Children.Add(new TextBlock()
@@ -134,8 +137,11 @@ namespace MuhAimLabScoresViewer
                 Child = headerdocky
             });
         }
+   
         public static void addBenchmarkScores(StackPanel benchStacky)
         {
+            benchScoreFieldLookup = new List<KeyValuePair<string, TextBlock>>();
+
             for (int i = 0; i < currentBenchmark.Categories.Length; i++)
             {
                 var categoryStacky = new StackPanel();
@@ -183,14 +189,17 @@ namespace MuhAimLabScoresViewer
                         scenarioDocky.Children.Add(tb);
 
                         //task score
-                        scenarioDocky.Children.Add(new TextBlock()
+                        var scoreTB = new TextBlock()
                         {
                             Name = $"score_{i}_{j}_{k}",
                             Text = "0",
                             Width = 80,
                             HorizontalAlignment = HorizontalAlignment.Left,
                             TextAlignment = TextAlignment.Center
-                        });
+                        };
+                        benchScoreFieldLookup.Add(new KeyValuePair<string, TextBlock>(scoreTB.Name, scoreTB));
+                        scenarioDocky.Children.Add(scoreTB);
+
 
                         //rank requirements
                         var requirementsDocky = new DockPanel();
@@ -239,6 +248,7 @@ namespace MuhAimLabScoresViewer
                 });
             }
         }
+        
         public static TextBlock findBenchmarkScoreFieldWithName(string targetName, StackPanel benchStacky)
         {
             TextBlock result = null;

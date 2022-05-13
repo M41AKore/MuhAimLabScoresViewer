@@ -711,7 +711,8 @@ namespace MuhAimLabScoresViewer
             {
                 this.Dispatcher.Invoke(() =>
                 {
-                    TextBlock tb = Benchmark.findBenchmarkScoreFieldWithName(targetName, benchStacky); //create a lookup table so this doesn't have to be found by UI thread
+                    //TextBlock tb = Benchmark.findBenchmarkScoreFieldWithName(targetName, benchStacky); //create a lookup table so this doesn't have to be found by UI thread
+                    TextBlock tb = Benchmark.benchScoreFieldLookup.FirstOrDefault(f => f.Key == targetName).Value; // ^did
                     if (tb != null && int.TryParse(tb.Text, out int parentTaskScore) && parentTaskScore < int.Parse(call.Result.highscore))
                         tb.Text = call.Result.highscore;
                 });
@@ -719,10 +720,13 @@ namespace MuhAimLabScoresViewer
             Trace.WriteLine($"updated '{call.Result.taskname}' in {timer.ElapsedMilliseconds}ms!");
         }
 
+        public static List<KeyValuePair<string, TextBlock>> compScoreFieldLookup;
+
         //personal competition score display
         private void loadCompetitionToGUI()
         {
             var calllist = new List<HighscoreUpdateCall>();
+            compScoreFieldLookup = new List<KeyValuePair<string, TextBlock>>();
             CompetitionStacky.Children.Clear();
 
             for (int i = 0; i < currentComp.Parts.Length; i++)
@@ -748,14 +752,17 @@ namespace MuhAimLabScoresViewer
                     };
                     nameTB.MouseDown += NameTB_MouseDown;
                     docky.Children.Add(nameTB);
-                    docky.Children.Add(new TextBlock()
+
+                    var scoreTB = new TextBlock()
                     {
                         Name = $"score_{i}_{j}",
                         Width = 100,
                         TextAlignment = TextAlignment.Center,
                         HorizontalAlignment = HorizontalAlignment.Left,
                         Background = Brushes.White
-                    });
+                    };
+                    compScoreFieldLookup.Add(new KeyValuePair<string, TextBlock>(scoreTB.Name, scoreTB));
+                    docky.Children.Add(scoreTB);
 
                     //play button at end of line
                     /**var parts = getAuthorIdAndWorkshopIdFromTaskName(currentComp.Parts[i].Scenarios[j].TaskName)?.Split(' ');
@@ -804,7 +811,8 @@ namespace MuhAimLabScoresViewer
                         this.Dispatcher.Invoke(() =>
                         {
                             //find texblock with matching ID
-                            var field = findPersonalCompetitionStatsScoreField(textblockID);
+                            //var field = findPersonalCompetitionStatsScoreField(textblockID);
+                            var field = compScoreFieldLookup.FirstOrDefault(f => f.Key == textblockID).Value;
                             if (field != null) field.Text = call.Result.highscore;
                         });
                         return;
