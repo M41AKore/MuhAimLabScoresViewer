@@ -184,10 +184,20 @@
                     <Label Name="GraphTitle" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center"></Label>
                 </DockPanel>
                 <DockPanel Name="contentDocky">
-                    <ScrollViewer Name="ScenariosScroller" HorizontalAlignment="Left" Width="250" Background="Transparent" VerticalAlignment="Top" 
+                    <StackPanel>
+                        <DockPanel Margin="10,0,0,10">
+                            <ComboBox ItemsSource="{Binding Path=SortTypes}" SelectedItem="{Binding Path=SortType}" DisplayMemberPath="Name" 
+                                      Width="80" Margin="0,0,10,0" HorizontalAlignment="Left"/>
+                            <ComboBox ItemsSource="{Binding Path=SortDirections}" SelectedItem="{Binding Path=SortDirection}" DisplayMemberPath="Name" 
+                                      Width="100" HorizontalAlignment="Left"/>
+                        </DockPanel>
+                        
+                        <ScrollViewer Name="ScenariosScroller" HorizontalAlignment="Left" Width="250" Background="Transparent" VerticalAlignment="Top" 
                               HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" Height="540">
-                        <StackPanel Margin="10,0,0,5" HorizontalAlignment="Left" Name="scenariosStacky"/>
-                    </ScrollViewer>
+                            <StackPanel Margin="10,0,0,5" HorizontalAlignment="Left" Name="scenariosStacky"/>
+                        </ScrollViewer>
+                    </StackPanel>
+                    
 
                     <StackPanel Margin="0,-15,0,0" Name="graphStacky"></StackPanel>
 

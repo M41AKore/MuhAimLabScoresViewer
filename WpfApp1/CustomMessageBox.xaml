@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:MuhAimLabScoresViewer"
         mc:Ignorable="d"
         Title="MehssageBox" 
-        Height="160" Width="250" Closed="Window_Closed">
+        Height="160" Width="250" Closed="Window_Closed" ResizeMode="NoResize">
     <Grid Height="auto" MaxHeight="250">
         <Grid.ColumnDefinitions>
             <ColumnDefinition/>

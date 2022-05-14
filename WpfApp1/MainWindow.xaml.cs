@@ -49,6 +49,7 @@ namespace MuhAimLabScoresViewer
         KeyboardHook hook = new KeyboardHook();
         private bool registeredHotkey = false;
 
+        public static List<KeyValuePair<string, TextBlock>> compScoreFieldLookup;
 
         public MainWindow()
         {
@@ -477,7 +478,7 @@ namespace MuhAimLabScoresViewer
         //task leaderboard
         private void getLeaderboardFor(string taskname)
         {
-            if (!Directory.Exists(currentSettings.SteamLibraryPath))
+            if (!Directory.Exists(viewModel.SteamLibraryPath))
             {
                 showMessageBox("please set SteamLibraryPath in Settings!");
                 return;
@@ -698,8 +699,6 @@ namespace MuhAimLabScoresViewer
             }
             Trace.WriteLine($"updated '{call.Result.taskname}' in {timer.ElapsedMilliseconds}ms!");
         }
-
-        public static List<KeyValuePair<string, TextBlock>> compScoreFieldLookup;
 
         //personal competition score display
         private void loadCompetitionToGUI()

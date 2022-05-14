@@ -29,7 +29,7 @@ namespace MuhAimLabScoresViewer
         [DllImport("user32.dll")]
         static extern bool PostMessage(IntPtr hWnd, UInt32 Msg, int wParam, int lParam);
 
-        private static SQLiteConnection sqlite;
+        public static SQLiteConnection sqlite;
         public static string LocalDBFile;
         private static FileSystemWatcher watcher;
 
@@ -100,42 +100,44 @@ namespace MuhAimLabScoresViewer
             ScenarioHistory current = null;
             sqlite = new SQLiteConnection($"Data Source={LocalDBFile}"); //;New=False;
 
-            var results = selectQuery("SELECT * FROM TaskData ORDER BY createDate DESC"); //find SQL "LIMIT BY date" or so?
+            var dateString = DateTime.Now.AddMinutes(-viewModel.LiveTrackerMinutes).ToString("yyyy-MM-dd HH:mm:ss");
+            var results = selectQuery($"SELECT * FROM TaskData WHERE createDate >= '{dateString}' ORDER BY createDate DESC");
             var rows = results.Select();
         
-            var compareSpan = TimeSpan.FromMinutes(MainWindow.viewModel.LiveTrackerMinutes);
-            var relevant = rows.Where(r => DateTime.TryParse(r["createDate"].ToString(), out DateTime date) && DateTime.UtcNow - date < compareSpan).ToList();
+            //this is done in select statement now
+            //var compareSpan = TimeSpan.FromMinutes(MainWindow.viewModel.LiveTrackerMinutes);
+            //var relevant = rows.Where(r => DateTime.TryParse(r["createDate"].ToString(), out DateTime date) && DateTime.UtcNow - date < compareSpan).ToList();
+            //var orderedRelevant = relevant.OrderByDescending(r => DateTime.Parse(r["createDate"].ToString())).ToList();
 
-            var orderedRelevant = relevant.OrderByDescending(r => DateTime.Parse(r["createDate"].ToString())).ToList();
-            var last = orderedRelevant.FirstOrDefault();
-            
+            var last = rows.FirstOrDefault();        
             if (last != null)
             {
                 current = new ScenarioHistory()
                 {
                     Identification = last["taskName"].ToString(),
                     Name = null, //last["name"].ToString(),
+                    WorkshopId = last["workshopId"].ToString(),
                     Plays = new List<Play>() { new Play()
                         {
                             DateString = last["createDate"].ToString(),
                             Date = DateTime.Parse(last["createDate"].ToString()),
                             Score = last["score"].ToString(),
-                            //Accuracy = last["accuracy"].ToString(), // would have to parse ["performance"] for this
+                            //Accuracy = last["accuracy"].ToString(), // would have to parse ["performance"] for 
                         } 
                     },
                 };
 
-                for (int i = 0; i < orderedRelevant.Count; i++)
+                for (int i = 0; i < rows.Length; i++)
                 {
-                    if(orderedRelevant[i] == last) continue;
+                    if(rows[i] == last) continue;
 
-                    if (orderedRelevant[i]["taskName"].ToString() == last["taskName"].ToString())
+                    if (rows[i]["taskName"].ToString() == last["taskName"].ToString())
                     {
                         current.Plays.Add(new Play()
                         {
-                            DateString = orderedRelevant[i]["createDate"].ToString(),
-                            Date = DateTime.Parse(orderedRelevant[i]["createDate"].ToString()),
-                            Score = orderedRelevant[i]["score"].ToString(),
+                            DateString = rows[i]["createDate"].ToString(),
+                            Date = DateTime.Parse(rows[i]["createDate"].ToString()),
+                            Score = rows[i]["score"].ToString(),
                             //Accuracy = relevant[i]["accuracy"].ToString(), //see comment above 
                         });
                     }
@@ -152,7 +154,7 @@ namespace MuhAimLabScoresViewer
         public static void createLiveTrackerGUI()
         {           
             currentScenario = determineCurrentScenario();
-            if(currentScenario != null) currentScenario.Name = getTaskNameFromLevelID(currentScenario.Identification, null);
+            if(currentScenario != null) currentScenario.Name = getTaskNameFromLevelID(currentScenario.Identification, string.IsNullOrEmpty(currentScenario.WorkshopId) ? null : currentScenario.WorkshopId);
 
             MainWindow.Instance.Dispatcher.Invoke(() =>
             {

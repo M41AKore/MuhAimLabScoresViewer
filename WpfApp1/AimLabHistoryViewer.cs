@@ -19,7 +19,7 @@ namespace MuhAimLabScoresViewer
 {
     public class AimLabHistoryViewer
     {
-        private static List<ScenarioHistory> Scenarios;
+        public static List<ScenarioHistory> Scenarios;
 
         public static AimLabHistory getData(string filepath)
         {
@@ -80,12 +80,31 @@ namespace MuhAimLabScoresViewer
             Scenarios.ForEach(s => s.Plays = s.Plays.OrderBy(p => p.Date).ToList()); //make sure they're in timely order
             Scenarios = Scenarios.OrderBy(s => s.Name).ToList(); //order alphabetically
 
-            createScenariosGUI();
+            createScenariosGUI(MainWindow.viewModel.SortType.Name, MainWindow.viewModel.SortDirection.Name);
         }
     
-        private static void createScenariosGUI()
+        public static void createScenariosGUI(string sortType = "ABC", string sortDirection = "Ascending")
         {
+
             MainWindow.Instance.scenariosStacky.Children.Clear();
+
+            switch (sortType)
+            {
+                case "ABC": //order alphabetically
+                    if (sortDirection == "Descending") Scenarios = Scenarios.OrderByDescending(s => s.Name).ToList();
+                    else Scenarios = Scenarios.OrderBy(s => s.Name).ToList();
+                    break;
+                case "Plays": //order by playcount
+                    if (sortDirection == "Descending") Scenarios = Scenarios.OrderByDescending(s => s.Plays.Count).ToList();
+                    else Scenarios = Scenarios.OrderBy(s => s.Plays.Count).ToList();
+                    break;
+                case "Date": //order by last played
+                    if (sortDirection == "Descending") Scenarios = Scenarios.OrderByDescending(s => s.Plays.FirstOrDefault()?.Date).ToList();
+                    else Scenarios = Scenarios.OrderBy(s => s.Plays.FirstOrDefault()?.Date).ToList();
+                    break;
+                default:
+                    break;
+            }
 
             for (int i = 0; i < Scenarios.Count; i++)
             {
@@ -212,15 +231,12 @@ namespace MuhAimLabScoresViewer
             }
         }
 
-
-        private static SQLiteConnection sqlite;
-
         public static void pullDataFromLocalDB()
         {
             try
             {
                 Logger.log("reading db file...");
-                sqlite = new SQLiteConnection($"Data Source={LiveTracker.LocalDBFile}"); //;New=False;
+                if(LiveTracker.sqlite == null) LiveTracker.sqlite = new SQLiteConnection($"Data Source={LiveTracker.LocalDBFile}"); //;New=False;
 
                 var results = LiveTracker.selectQuery("SELECT * FROM TaskData ORDER BY taskName DESC");
                 var rows = results.Select();
@@ -256,9 +272,8 @@ namespace MuhAimLabScoresViewer
                 }
 
                 Scenarios.ForEach(s => s.Plays = s.Plays.OrderBy(p => p.Date).ToList()); //make sure they're in timely order
-                Scenarios = Scenarios.OrderBy(s => s.Name).ToList(); //order alphabetically
 
-                createScenariosGUI();
+                createScenariosGUI(MainWindow.viewModel.SortType.Name, MainWindow.viewModel.SortDirection.Name);
             }
             catch (Exception ex)
             {

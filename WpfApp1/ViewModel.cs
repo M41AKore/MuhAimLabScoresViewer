@@ -1,15 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace MuhAimLabScoresViewer
 {
     public class ViewModel : INotifyPropertyChanged
     {
+        public class ScenarioSortingType
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+        }
+        public class ScenarioSortingDirection
+        {
+            public int Id { get; set; }
+            public string Name { get; set; }
+        }
+
+
         private string _SteamLibraryPath;
         private string _klutchId;
         private Visibility _borderVisible = Visibility.Collapsed;
@@ -26,6 +40,10 @@ namespace MuhAimLabScoresViewer
         private bool _ColorBenchmarkRanksAndScores;
         private int _LiveTrackerMinutes;
         private bool _LiveTrackerEnabled;
+        private ObservableCollection<ScenarioSortingType> _SortTypes;
+        private ObservableCollection<ScenarioSortingDirection> _SortDirections;
+        private ScenarioSortingType _SortType;
+        private ScenarioSortingDirection _SortDirection;
 
         public string SteamLibraryPath
         {
@@ -185,7 +203,52 @@ namespace MuhAimLabScoresViewer
                 NotifyPropertyChanged("LiveTrackerMinutes");
             }
         }
-     
+        public ObservableCollection<ScenarioSortingType> SortTypes
+        {
+            get => _SortTypes;
+            set
+            {
+                _SortTypes = value;
+                NotifyPropertyChanged("SortTypes");
+            }
+        }
+        public ObservableCollection<ScenarioSortingDirection> SortDirections
+        {
+            get => _SortDirections;
+            set
+            {
+                _SortDirections = value;
+                NotifyPropertyChanged("SortDirections");
+            }
+        }
+       
+        public ScenarioSortingType SortType
+        {
+            get => _SortType;
+            set
+            {
+                if(_SortType != value && _SortType != null && SortDirection != null && AimLabHistoryViewer.Scenarios != null)
+                {
+                    AimLabHistoryViewer.createScenariosGUI(value.Name, SortDirection.Name);
+                }
+                _SortType = value;
+                NotifyPropertyChanged("SortType");
+            }
+        }
+        public ScenarioSortingDirection SortDirection
+        {
+            get => _SortDirection;
+            set
+            {
+                if (_SortDirection != value && _SortDirection != null && SortType != null && AimLabHistoryViewer.Scenarios != null)
+                {
+                    AimLabHistoryViewer.createScenariosGUI(SortType.Name, value.Name);
+                }
+                _SortDirection = value;
+                NotifyPropertyChanged("SortDirection");
+            }
+        }
+
 
         private void NotifyPropertyChanged(string info)
         {
@@ -202,6 +265,21 @@ namespace MuhAimLabScoresViewer
                 "90s",
                 "120s",
             };
+
+            SortTypes = new ObservableCollection<ScenarioSortingType>()
+            {
+                new ScenarioSortingType(){ Id=0, Name="ABC"},
+                new ScenarioSortingType(){ Id=1, Name="Plays"},
+                new ScenarioSortingType(){ Id=2, Name="Date"},
+            };
+            SortType = SortTypes[0];
+
+            SortDirections = new ObservableCollection<ScenarioSortingDirection>()
+            {
+                new ScenarioSortingDirection(){ Id=0, Name="Ascending"},
+                new ScenarioSortingDirection(){ Id=1, Name="Descending"},
+            };
+            SortDirection = SortDirections[0];
         }
     }
 }

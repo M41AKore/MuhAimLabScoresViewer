@@ -40,9 +40,9 @@ namespace MuhAimLabScoresViewer
 
         public static string buildAPICallFromTaskName(string task)
         {
-            if (!Directory.Exists(currentSettings.SteamLibraryPath)) return null;
+            if (!Directory.Exists(viewModel.SteamLibraryPath)) return null;
 
-            DirectoryInfo[] dirs = new DirectoryInfo(currentSettings.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
+            DirectoryInfo[] dirs = new DirectoryInfo(viewModel.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
             foreach (var dir in dirs)
                 foreach (var subdir in dir.GetDirectories())
                     if (subdir.Name == "Levels")
@@ -112,9 +112,9 @@ namespace MuhAimLabScoresViewer
 
         public static string getTaskNameFromLevelID(string levelid, string workshopid, bool exclusive = true)
         {
-            if (!Directory.Exists(MainWindow.currentSettings.SteamLibraryPath)) return null;
+            if (!Directory.Exists(viewModel.SteamLibraryPath)) return null;
 
-            DirectoryInfo[] dirs = new DirectoryInfo(MainWindow.currentSettings.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
+            DirectoryInfo[] dirs = new DirectoryInfo(viewModel.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
             foreach (var dir in dirs)
             {
                 if (!string.IsNullOrEmpty(workshopid) && dir.Name != workshopid) continue;
@@ -125,10 +125,6 @@ namespace MuhAimLabScoresViewer
                             if (file.Name == "level.es3")
                             {
                                 var content = File.ReadAllText(file.FullName);
-                                if(levelid == "CsLevel.morcaillionaire.rA Fours.R4KRU5")
-                                {
-
-                                }
                                 if (content.Contains(levelid))
                                 {
                                     string foundLevelId = getLevelIDFromES3(content);
@@ -165,9 +161,9 @@ namespace MuhAimLabScoresViewer
 
         public static string buildAPICallFromTaskID(string weirdtaskid)
         {
-            if (!Directory.Exists(MainWindow.currentSettings.SteamLibraryPath)) return null;
+            if (!Directory.Exists(viewModel.SteamLibraryPath)) return null;
 
-            DirectoryInfo[] dirs = new DirectoryInfo(MainWindow.currentSettings.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
+            DirectoryInfo[] dirs = new DirectoryInfo(viewModel.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
             foreach (var dir in dirs)
                 foreach (var subdir in dir.GetDirectories())
                     if (subdir.Name == "Levels")
@@ -206,11 +202,11 @@ namespace MuhAimLabScoresViewer
         }
         public static string getAuthorIdAndWorkshopIdFromTaskName(string taskname)
         {
-            if (!Directory.Exists(currentSettings.SteamLibraryPath)) return null;
+            if (!Directory.Exists(viewModel.SteamLibraryPath)) return null;
 
             string result = null;
 
-            DirectoryInfo[] dirs = new DirectoryInfo(currentSettings.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
+            DirectoryInfo[] dirs = new DirectoryInfo(viewModel.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
             foreach (var dir in dirs)
                 foreach (var subdir in dir.GetDirectories())
                     if (subdir.Name == "Levels")

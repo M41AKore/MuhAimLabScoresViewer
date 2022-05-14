@@ -53,6 +53,7 @@ namespace MuhAimLabScoresViewer
             public string Identification;
             public string Name;
             public List<Play> Plays;
+            public string WorkshopId;
         }
 
         public class Play
