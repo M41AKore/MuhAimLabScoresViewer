@@ -167,15 +167,11 @@ namespace MuhAimLabScoresViewer
                 var group = scenario.Plays.Take(i + 1).OrderBy(p => int.Parse(p.Score)).ToArray();
                 if ((i + 1) % 2 == 0) //if even, calculate median at half
                 {
-                    int halfPlusOne = (i + 1) / 2;
-                    int halfMinusOne = halfPlusOne - 1;
-
+                    int halfPlusOne = (i + 1) / 2; // f.e. 12 / 2 = 6, which would be top of bottom half, but since it's index it's 7th, aka first of top half
+                    int halfMinusOne = halfPlusOne - 1; // ^the actual 6th number, aka top of bottom half
                     medians.Add((int.Parse(group[halfPlusOne].Score) + int.Parse(group[halfMinusOne].Score)) / 2);
                 }
-                else
-                {
-                    medians.Add(double.Parse(group[(i + 1) / 2].Score));
-                }
+                else medians.Add(double.Parse(group[(i + 1) / 2].Score)); //if uneven, median is at half
             }
 
             //median plot

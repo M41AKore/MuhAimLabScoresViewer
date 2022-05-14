@@ -36,10 +36,7 @@ namespace MuhAimLabScoresViewer
         [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
         public static extern void keybd_event(uint bVk, uint bScan, uint dwFlags, uint dwExtraInfo);
 
-        private static List<ScenarioHistory> Scenarios;
-        private static bool liveTrackerRunning = false;
-
-        private static ScenarioHistory currentScenario;
+        public static ScenarioHistory currentScenario;
 
         public static void simulateKeyPress(string hotkey)
         {

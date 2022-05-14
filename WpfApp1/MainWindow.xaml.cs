@@ -17,6 +17,7 @@ using Button = System.Windows.Controls.Button;
 using static MuhAimLabScoresViewer.Helper;
 using static MuhAimLabScoresViewer.ObjectsAndStructs;
 using static OBS.libobs;
+using System.Data.SQLite;
 
 namespace MuhAimLabScoresViewer
 {
@@ -310,7 +311,7 @@ namespace MuhAimLabScoresViewer
             if (currentSettings.alsoTakeScreenshot) takeScreenshot();
             saveReplay();
         }
-        private void Button_Click_3(object sender, RoutedEventArgs e) => LiveTracker.simulateKeyPress(currentSettings.OBS_Hotkey);      
+        private void Button_Click_3(object sender, RoutedEventArgs e) => LiveTracker.simulateKeyPress(currentSettings.OBS_Hotkey);
         private void Button_Click_4(object sender, RoutedEventArgs e) => AimLabHistoryViewer.pullDataFromLocalDB();
         private void OnActivated(object sender, EventArgs eventArgs)
         {
@@ -439,11 +440,11 @@ namespace MuhAimLabScoresViewer
                             if (item != null) AimLabHistoryViewer.sortTasks(item.historyEntries);
                         }
                     }
-                    catch(Exception e)
+                    catch (Exception e)
                     {
                         Logger.log("Error during taskdata loading!" + Environment.NewLine + e.Message.ToString());
                         showMessageBox("Could not load this TaskData file!");
-                    }                 
+                    }
                 }
             }
             else showMessageBox("please enter 'SteamLibraryPath' in Settings!");
@@ -1162,9 +1163,9 @@ namespace MuhAimLabScoresViewer
             else
             {
                 savePath = "./Screenshots";
-                Directory.CreateDirectory(savePath);              
+                Directory.CreateDirectory(savePath);
             }
-        
+
             var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
             string screenshotpath = $"{savePath}/Screenshot_{timestamp}.png";
             bmpScreenshot.Save(screenshotpath, System.Drawing.Imaging.ImageFormat.Png);
@@ -1176,5 +1177,76 @@ namespace MuhAimLabScoresViewer
                 this.Dispatcher.Invoke(() => autoRecordStatus_Output2.Text = "");
             });
         }
+
+        private void Button_Click_6(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Logger.log("reading db file...");
+                if (LiveTracker.sqlite == null) LiveTracker.sqlite = new SQLiteConnection($"Data Source={LiveTracker.LocalDBFile}"); //;New=False;
+
+                var currentTask = LiveTracker.currentScenario;
+                if (currentTask == null) return;
+
+                var results = LiveTracker.selectQuery($"SELECT * FROM TaskData WHERE taskName = '{currentTask.Identification}'");
+                var rows = results.Select();
+
+                List<int> scores = new List<int>();
+                foreach (var row in rows)
+                    scores.Add(int.Parse(row["score"].ToString()));
+
+                //highscore
+                int max = scores.Max();
+                double diff = double.Parse(txt_TrackerHighscore.Text) / max;
+                var docky = new DockPanel();
+                docky.Children.Add(new TextBlock() { Text = "Highscore: " });
+                docky.Children.Add(new TextBlock()
+                {
+                    Text = $"{getDiffString(diff)}%",
+                    Foreground = diff < 1 ? Brushes.Red : Brushes.Green,
+                });
+                historicComparisonStacky.Children.Add(docky);
+
+                //average
+                double average = scores.Sum() / scores.Count;
+                diff = double.Parse(txt_TrackerAverage.Text) / average;
+                docky = new DockPanel();
+                docky.Children.Add(new TextBlock() { Text = "Average: " });
+                docky.Children.Add(new TextBlock()
+                {
+                    Text = $"{getDiffString(diff)}%",
+                    Foreground = diff < 1 ? Brushes.Red : Brushes.Green,
+                });
+                historicComparisonStacky.Children.Add(docky);
+
+
+                //median
+                var sortedScores = scores.OrderByDescending(s => s).ToList();
+                double median = 0;
+                if (sortedScores.Count % 2 == 0) //if even, calculate median at half
+                {
+                    int halfPlusOne = (sortedScores.Count) / 2;
+                    int halfMinusOne = halfPlusOne - 1;
+                    median = (sortedScores[halfPlusOne] + sortedScores[halfMinusOne]) / 2;
+                }
+                else median = sortedScores[sortedScores.Count / 2]; //median is at half
+
+                diff = double.Parse(txt_TrackerMedian.Text) / median;
+                docky = new DockPanel();
+                docky.Children.Add(new TextBlock() { Text = "Median: " });               
+                docky.Children.Add(new TextBlock()
+                {
+                    Text = $"{getDiffString(diff)}%",
+                    Foreground = diff < 1 ? Brushes.Red : Brushes.Green,
+                });
+                historicComparisonStacky.Children.Add(docky);
+            }
+            catch (Exception ex)
+            {
+                Logger.log("exception thrown when trying to read database file!" + Environment.NewLine + ex.Message);
+            }
+        }
+
+        private string getDiffString(double ratio) => ratio < 1 ? "-" + ((1 - ratio) * 100).ToString("0.##") : "+" + ((ratio - 1) * 100).ToString("0.##");
     }
 }
