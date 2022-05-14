@@ -220,8 +220,7 @@ namespace MuhAimLabScoresViewer
                 _SortDirections = value;
                 NotifyPropertyChanged("SortDirections");
             }
-        }
-       
+        }       
         public ScenarioSortingType SortType
         {
             get => _SortType;

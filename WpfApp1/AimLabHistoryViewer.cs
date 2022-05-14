@@ -85,7 +85,6 @@ namespace MuhAimLabScoresViewer
     
         public static void createScenariosGUI(string sortType = "ABC", string sortDirection = "Ascending")
         {
-
             MainWindow.Instance.scenariosStacky.Children.Clear();
 
             switch (sortType)
