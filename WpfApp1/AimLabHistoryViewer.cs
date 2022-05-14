@@ -83,13 +83,13 @@ namespace MuhAimLabScoresViewer
             createScenariosGUI(MainWindow.viewModel.SortType.Name, MainWindow.viewModel.SortDirection.Name);
         }
     
-        public static void createScenariosGUI(string sortType = "ABC", string sortDirection = "Ascending")
+        public static void createScenariosGUI(string sortType = "Name", string sortDirection = "Ascending")
         {
             MainWindow.Instance.scenariosStacky.Children.Clear();
 
             switch (sortType)
             {
-                case "ABC": //order alphabetically
+                case "Name": //order alphabetically
                     if (sortDirection == "Descending") Scenarios = Scenarios.OrderByDescending(s => s.Name).ToList();
                     else Scenarios = Scenarios.OrderBy(s => s.Name).ToList();
                     break;

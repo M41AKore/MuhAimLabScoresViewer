@@ -267,7 +267,7 @@ namespace MuhAimLabScoresViewer
 
             SortTypes = new ObservableCollection<ScenarioSortingType>()
             {
-                new ScenarioSortingType(){ Id=0, Name="ABC"},
+                new ScenarioSortingType(){ Id=0, Name="Name"},
                 new ScenarioSortingType(){ Id=1, Name="Plays"},
                 new ScenarioSortingType(){ Id=2, Name="Date"},
             };
