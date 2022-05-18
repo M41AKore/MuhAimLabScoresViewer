@@ -45,14 +45,19 @@ namespace MuhAimLabScoresViewer
 
                     for (int k = 0; k < currentBenchmark.Categories[i].Subcategories[j].Scenarios.Length; k++)
                     {
-                        var field = findBenchmarkScoreFieldWithName($"score_{i}_{j}_{k}", benchStacky);
+                        string targetName = $"score_{i}_{j}_{k}";
+                        TextBlock field = Benchmark.benchScoreFieldLookup.FirstOrDefault(f => f.Key == targetName).Value;
+
+                        //var field = findBenchmarkScoreFieldWithName($"score_{i}_{j}_{k}", benchStacky);
                         int score = int.Parse(field.Text);
 
                         //color field
                         if(MainWindow.viewModel.ColorBenchmarkRanksAndScores)
                         {
                             int achievedRank = currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].getAchievedRankScoreIndex(score);
-                            field.Background = getColorFromHex(currentBenchmark.Ranks[achievedRank].Color);
+                            var color = getColorFromHex(currentBenchmark.Ranks[achievedRank].Color);
+                            field.Background = color;
+                            if (color.Color.R < 100 && color.Color.G < 100 && color.Color.B < 100) field.Foreground = Brushes.White; //if field dark, use white font                    
                         }                        
 
                         currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].calculateEnergy(score);
@@ -368,10 +373,12 @@ namespace MuhAimLabScoresViewer
 
         public int getAchievedRankScoreIndex(int score)
         {
+            if (!RankScoreRequirements.Any(rr => rr <= score)) return -1; //unranked
+
             for (int i = 0; i < RankScoreRequirements.Length; i++)
                 if (RankScoreRequirements[i] > score) return i - 1;
 
-            return -1;
+            return RankScoreRequirements.Length-1; //no more ranks to achieve aka top rank, return last rank to calculate from
         }
 
         private float getEnergyForScore(int score, int rankindex)
@@ -379,11 +386,11 @@ namespace MuhAimLabScoresViewer
             float baseRankEnergy = currentBenchmark.Ranks[rankindex].TaskEnergyRequirement;
 
             //score between two requirements
-            int maxScoreDifference = !(rankindex < RankScoreRequirements.Length) ? //if already top rank
+            int maxScoreDifference = !(rankindex+1 < RankScoreRequirements.Length) ? //if already top rank
                 RankScoreRequirements[rankindex] - RankScoreRequirements[rankindex-1] : //use energy per points of previous
                 RankScoreRequirements[rankindex + 1] - RankScoreRequirements[rankindex]; 
 
-            int maxEnergyDifference = !(rankindex < RankScoreRequirements.Length) ? //if already top rank
+            int maxEnergyDifference = !(rankindex+1 < RankScoreRequirements.Length) ? //if already top rank
                 currentBenchmark.Ranks[rankindex].TaskEnergyRequirement - currentBenchmark.Ranks[rankindex-1].TaskEnergyRequirement : //use energy per points of previous
                 currentBenchmark.Ranks[rankindex + 1].TaskEnergyRequirement - currentBenchmark.Ranks[rankindex].TaskEnergyRequirement;
 
