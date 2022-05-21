@@ -10,6 +10,7 @@ using System.Xml;
 using System.Xml.Serialization;
 using static MuhAimLabScoresViewer.MainWindow;
 using static MuhAimLabScoresViewer.Helper;
+using System.Diagnostics;
 
 namespace MuhAimLabScoresViewer
 {
@@ -50,11 +51,17 @@ namespace MuhAimLabScoresViewer
 
                         //var field = findBenchmarkScoreFieldWithName($"score_{i}_{j}_{k}", benchStacky);
                         int score = int.Parse(field.Text);
+                        Trace.WriteLine("calculating rank for '" + currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].Name);
+                        int achievedRank = currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].getAchievedRankScoreIndex(score);
+                        if (achievedRank == -1)
+                        {
+                            //unranked TODO
+                            continue;
+                        }
 
                         //color field
-                        if(MainWindow.viewModel.ColorBenchmarkRanksAndScores)
+                        if (MainWindow.viewModel.ColorBenchmarkRanksAndScores)
                         {
-                            int achievedRank = currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].getAchievedRankScoreIndex(score);
                             var color = getColorFromHex(currentBenchmark.Ranks[achievedRank].Color);
                             field.Background = color;
                             if (color.Color.R < 100 && color.Color.G < 100 && color.Color.B < 100) field.Foreground = Brushes.White; //if field dark, use white font                    
@@ -181,6 +188,10 @@ namespace MuhAimLabScoresViewer
                         var task = currentBenchmark.Categories[i].Subcategories[j].Scenarios[k]; //shorthand
                                                                                                  
                         //task name
+                        if(currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].Name == "rA Threewide") //and airtrack
+                        {
+
+                        }
                         var parts = getAuthorIdAndWorkshopIdFromTaskName(currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].Name)?.Split(' ');
                         var tb = new TextBlock()
                         {
@@ -351,7 +362,7 @@ namespace MuhAimLabScoresViewer
         [XmlArrayItem("RankScore")]
         public int[] RankScoreRequirements { get; set; }
 
-
+        public int Score { get; set; }
         public int Energy { get; set; }
 
         public void calculateEnergy(int score)
@@ -381,7 +392,7 @@ namespace MuhAimLabScoresViewer
             return RankScoreRequirements.Length-1; //no more ranks to achieve aka top rank, return last rank to calculate from
         }
 
-        private float getEnergyForScore(int score, int rankindex)
+        public float getEnergyForScore(int score, int rankindex)
         {
             float baseRankEnergy = currentBenchmark.Ranks[rankindex].TaskEnergyRequirement;
 

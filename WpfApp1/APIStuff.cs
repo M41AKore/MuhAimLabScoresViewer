@@ -40,7 +40,7 @@ namespace MuhAimLabScoresViewer
             return null;
         }
 
-        public static async Task<HighscoreUpdateCall> getHighscore(HighscoreUpdateCall call)
+        public static async Task<HighscoreUpdateCall> getCompHighscore(HighscoreUpdateCall call)
         {
             if (string.IsNullOrEmpty(call.apicall)) return call;
 
@@ -59,6 +59,42 @@ namespace MuhAimLabScoresViewer
                             call.highscore = r.score.ToString();
                             break;
                         }                          
+                }
+                catch (HttpRequestException e)
+                {
+                    Console.WriteLine("\nException Caught!");
+                    Console.WriteLine("Message :{0} ", e.Message);
+                }
+            }
+
+            return call;
+        }
+
+        public static async Task<HighscoreUpdateCall> getBenchHighscore(HighscoreUpdateCall call)
+        {
+            if (string.IsNullOrEmpty(call.apicall)) return call;
+
+            using (HttpClient client = new HttpClient())
+            {
+                try
+                {
+                    HttpResponseMessage response = await client.GetAsync(call.apicall);
+                    response.EnsureSuccessStatusCode();
+                    string responseBody = await response.Content.ReadAsStringAsync();
+                    Item item = JsonConvert.DeserializeObject<Item>(responseBody);
+
+                    MainWindow.Instance.benchmarkLeaderboards.Add(new BenchmarkLeaderboard()
+                    {
+                        TaskName = call.taskname,
+                        ResultsItem = item
+                    });
+
+                    foreach (var r in item.results)
+                        if (r.klutchId == viewModel.klutchId)
+                        {
+                            call.highscore = r.score.ToString();
+                            break;
+                        }
                 }
                 catch (HttpRequestException e)
                 {

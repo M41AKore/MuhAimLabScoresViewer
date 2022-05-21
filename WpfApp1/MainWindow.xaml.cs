@@ -18,6 +18,7 @@ using static MuhAimLabScoresViewer.Helper;
 using static MuhAimLabScoresViewer.ObjectsAndStructs;
 using static OBS.libobs;
 using System.Data.SQLite;
+using System.Collections.Concurrent;
 
 namespace MuhAimLabScoresViewer
 {
@@ -457,20 +458,21 @@ namespace MuhAimLabScoresViewer
 
             List<Task> tasks = new List<Task>();
             foreach (var call in calllist)
-                tasks.Add(Task.Run(async () => await APIStuff.getHighscore(call).ContinueWith(result => receiver(result)))); // updateBenchmarkWithHighscore(result));
+                tasks.Add(Task.Run(async () => await APIStuff.getBenchHighscore(call).ContinueWith(result => receiver(result)))); // updateBenchmarkWithHighscore(result));
 
             await Task.WhenAll(tasks.ToArray());
             string rankName = Benchmark.calculateBenchmarkRank(benchStacky);
             Txt_BenchmarkRank.Text = rankName;
             //Txt_BenchmarkRank.Foreground = getColorFromHex(currentBenchmark.Ranks.FirstOrDefault(r => r.Name == rankName).Color);
             Txt_BenchmarkEnergy.Text = ((int)currentBenchmark.TotalEnergy).ToString();
+            createBenchmarkLeaderboard(currentBenchmark);
         }
         private async void launchCompetitionUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
         {
             timer.Restart();
             List<Task> tasks = new List<Task>();
             foreach (var call in calllist)
-                tasks.Add(Task.Run(async () => await APIStuff.getHighscore(call).ContinueWith(result => receiver(result))));
+                tasks.Add(Task.Run(async () => await APIStuff.getCompHighscore(call).ContinueWith(result => receiver(result))));
 
             await Task.WhenAll(tasks.ToArray());
             //
@@ -1233,7 +1235,7 @@ namespace MuhAimLabScoresViewer
 
                 diff = double.Parse(txt_TrackerMedian.Text) / median;
                 docky = new DockPanel();
-                docky.Children.Add(new TextBlock() { Text = "Median: " });               
+                docky.Children.Add(new TextBlock() { Text = "Median: " });
                 docky.Children.Add(new TextBlock()
                 {
                     Text = $"{getDiffString(diff)}%",
@@ -1248,5 +1250,220 @@ namespace MuhAimLabScoresViewer
         }
 
         private string getDiffString(double ratio) => ratio < 1 ? "-" + ((1 - ratio) * 100).ToString("0.##") : "+" + ((ratio - 1) * 100).ToString("0.##");
+
+        private void BenchmarkLeaderboardButton_Click(object sender, RoutedEventArgs e)
+        {
+            TasksTab.Visibility = Visibility.Collapsed;
+            TaskButton_BottomBorder.Visibility = Visibility.Visible;
+
+            BenchmarksTab.Visibility = Visibility.Collapsed;
+            BenchmarkButton_BottomBorder.Visibility = Visibility.Visible;
+
+            BenchmarkLeaderboardTab.Visibility = Visibility.Visible;
+            BenchmarkLeaderboardButton_BottomBorder.Visibility = Visibility.Hidden;
+
+            CompetitionsTab.Visibility = Visibility.Collapsed;
+            CompetitionButton_BottomBorder.Visibility = Visibility.Visible;
+
+            AimLabHistoryViewerTab.Visibility = Visibility.Collapsed;
+            AimLabHistoryButton_BottomBorder.Visibility = Visibility.Visible;
+
+            LivetrackerTab.Visibility = Visibility.Collapsed;
+            LiveTrackerButton_BottomBorder.Visibility = Visibility.Visible;
+
+            SettingsTab.Visibility = Visibility.Collapsed;
+            SettingsButton_BottomBorder.Visibility = Visibility.Visible;
+
+            this.Height = 600;
+            this.Width = 1200;
+        }
+
+        public class BenchmarkLeaderboard
+        {
+            public string TaskName { get; set; }
+            public Item ResultsItem { get; set; }
+        }
+        public ConcurrentBag<BenchmarkLeaderboard> benchmarkLeaderboards = new ConcurrentBag<BenchmarkLeaderboard>();
+        public class BenchmarkLeaderboardContender
+        {
+            public string klutchId { get; set; }
+            public string UserName { get; set; }
+            public Benchmark Benchmark { get; set; }
+            public DateTime NewestScoreTimestamp { get; set; }
+        }
+        public class TaskScore
+        {
+            public string TaskName { get; set; }
+            public int Score { get; set; }
+            public float Energy { get; set; }
+        }
+        public List<BenchmarkLeaderboardContender> BenchmarkLeaderboardContenders = new List<BenchmarkLeaderboardContender>();
+        private void createBenchmarkLeaderboard(Benchmark bench)
+        {
+            List<Task> tasks = new List<Task>();
+            var leaderboards = new List<Item>();
+
+            Trace.WriteLine(benchmarkLeaderboards.Count);
+
+            for (int i = 0; i < bench.Categories.Length; i++)
+                for (int j = 0; j < bench.Categories[i].Subcategories.Length; j++) 
+                    for (int k = 0; k < bench.Categories[i].Subcategories[j].Scenarios.Length; k++)
+                    {
+                        var board = benchmarkLeaderboards.FirstOrDefault(b => b.TaskName == bench.Categories[i].Subcategories[j].Scenarios[k].Name);
+                        
+                        BenchmarkLeaderboard? alternative = null;
+                        if (!string.IsNullOrEmpty(bench.Categories[i].Subcategories[j].Scenarios[k].AlternativeName))
+                            alternative = benchmarkLeaderboards.FirstOrDefault(b => b.TaskName == bench.Categories[i].Subcategories[j].Scenarios[k].AlternativeName);
+
+                        if (board != null)
+                        {
+                            foreach(var result in board.ResultsItem.results)
+                            {
+                                var existing = BenchmarkLeaderboardContenders.FirstOrDefault(c => c.klutchId == result.klutchId);
+                                if(existing == null)
+                                {
+                                    existing = new BenchmarkLeaderboardContender()
+                                    {
+                                        klutchId = result.klutchId,
+                                        UserName = result.username,
+                                        Benchmark = XmlSerializer.deserializeXml<Benchmark>(viewModel.LastBenchmarkPath),
+                                        NewestScoreTimestamp = UnixTimeStampToDateTime(double.Parse(result.endedAt.Substring(0, result.endedAt.Length - 3))),
+                                    };
+                                    BenchmarkLeaderboardContenders.Add(existing);
+                                }
+
+                                if(alternative != null)
+                                {
+                                    var alternativeScore = alternative.ResultsItem.results.FirstOrDefault(a => a.klutchId == existing.klutchId)?.score;
+                                    if(alternativeScore != null && alternativeScore > 0 && result.score < alternativeScore)
+                                        existing.Benchmark.Categories[i].Subcategories[j].Scenarios[k].Score = (int)alternativeScore;
+                                    else
+                                        existing.Benchmark.Categories[i].Subcategories[j].Scenarios[k].Score = result.score;
+                                }
+                                else existing.Benchmark.Categories[i].Subcategories[j].Scenarios[k].Score = result.score;
+
+                                if (existing.UserName != result.username)
+                                {
+                                    var resultTimestamp = UnixTimeStampToDateTime(double.Parse(result.endedAt.Substring(0, result.endedAt.Length - 3)));
+                                    if(resultTimestamp > existing.NewestScoreTimestamp)
+                                    {
+                                        Trace.WriteLine(resultTimestamp + " is more recent than " + existing.NewestScoreTimestamp);
+                                        existing.UserName = result.username;
+                                        existing.NewestScoreTimestamp = resultTimestamp;
+                                    }                                   
+                                }
+
+                                existing.Benchmark.Categories[i].Subcategories[j].Scenarios[k].calculateEnergy(existing.Benchmark.Categories[i].Subcategories[j].Scenarios[k].Score);
+                            }
+                        }
+                    }
+
+            foreach(var contender in BenchmarkLeaderboardContenders)
+            {
+                foreach(var cat in contender.Benchmark.Categories)
+                {
+                    foreach(var subcat in cat.Subcategories)
+                    {
+                        foreach(var scen in subcat.Scenarios)
+                        {
+                            contender.Benchmark.EnergyPerTask.Add(scen.Energy);
+                        }
+                        contender.Benchmark.EnergyPerTask.Remove(subcat.Scenarios.Min(s => s.Energy));
+                    }
+                }
+                contender.Benchmark.TotalEnergy = contender.Benchmark.EnergyPerTask.Sum();
+            }
+
+
+
+
+            //headers (on left side)
+            var headerstacky = new StackPanel()
+            {
+                Name = "benchboard_headers",
+                Width = 150,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Background = getColorFromHex("#eeeeee")
+            };
+            //placement
+            headerstacky.Children.Add(new TextBlock()
+            {
+                Text = "Placement",
+            });
+            //player names
+            headerstacky.Children.Add(new TextBlock()
+            {
+                Text = "Name",
+            });
+            //scenario names
+            for (int i = 0; i < bench.Categories.Length; i++)
+                for (int j = 0; j < bench.Categories[i].Subcategories.Length; j++)
+                    for (int k = 0; k < bench.Categories[i].Subcategories[j].Scenarios.Length; k++)
+                    {
+                        headerstacky.Children.Add(new TextBlock()
+                        {
+                            Name = $"benchboardheader_{i}_{j}_{k}",
+                            Text = bench.Categories[i].Subcategories[j].Scenarios[k].Name,
+                        });
+                    }
+
+            headerstacky.Children.Add(new TextBlock()
+            {
+                Name = $"header_energytotal",
+                Text = "Total Energy"
+            });
+            benchStacky2.Children.Add(headerstacky);
+
+
+
+
+
+            BenchmarkLeaderboardContenders = BenchmarkLeaderboardContenders.OrderByDescending(c => c.Benchmark.TotalEnergy).ToList();
+
+            int placement = 0;
+            foreach(var contender in BenchmarkLeaderboardContenders)
+            {
+                placement++;
+                var playerstacky = new StackPanel()
+                {
+                    Width = 80,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    Background = getColorFromHex("#eeeeee")
+                };
+                //placement
+                playerstacky.Children.Add(new TextBlock()
+                {
+                    Text = $"#{placement}",
+                    TextAlignment = TextAlignment.Center,
+                });
+                //player names
+                playerstacky.Children.Add(new TextBlock()
+                {
+                    Text = contender.UserName,
+                    TextAlignment = TextAlignment.Center,
+                });
+                //scenario names
+                for (int i = 0; i < bench.Categories.Length; i++)
+                    for (int j = 0; j < bench.Categories[i].Subcategories.Length; j++)
+                        for (int k = 0; k < bench.Categories[i].Subcategories[j].Scenarios.Length; k++)
+                        {
+                            playerstacky.Children.Add(new TextBlock()
+                            {
+                                Name = $"benchcontenderresult_{i}_{j}_{k}_{placement}",
+                                Text = contender.Benchmark.Categories[i].Subcategories[j].Scenarios[k].Score.ToString(),
+                                TextAlignment = TextAlignment.Center,
+                            });
+                        }
+
+
+                playerstacky.Children.Add(new TextBlock()
+                {
+                    Name = $"header_total",
+                    Text = contender.Benchmark.TotalEnergy.ToString(),
+                    TextAlignment = TextAlignment.Center,
+                });
+                benchLeaderboardDocky.Children.Add(playerstacky);
+            }
+        }
     }
 }

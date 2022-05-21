@@ -48,6 +48,13 @@
                 <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
                 <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
                 <Rectangle Fill="#000" DockPanel.Dock="Right" Width="1"/>
+                <Rectangle Name="BenchmarkLeaderboardButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
+                <Button Click="BenchmarkLeaderboardButton_Click" Width="70" BorderThickness="0" Background="#fff">BenchLeader</Button>
+            </DockPanel>
+            <DockPanel Height="20" LastChildFill="True">
+                <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
+                <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
+                <Rectangle Fill="#000" DockPanel.Dock="Right" Width="1"/>
                 <Rectangle Name="CompetitionButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
                 <Button Click="CompetitionButton_Click" Width="80" BorderThickness="0" Background="#fff">Competition</Button>
             </DockPanel>
@@ -130,6 +137,21 @@
                 </DockPanel>
 
                 <StackPanel Name="benchStacky" Width="750"></StackPanel>
+            </StackPanel>
+
+            <StackPanel Name="BenchmarkLeaderboardTab" Visibility="Collapsed">
+                <DockPanel>
+                    <Button Click="Button_Click_1" Width="30" HorizontalAlignment="Right" Height="30" VerticalAlignment="Top">
+                        <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
+                    </Button>
+                </DockPanel>
+                <DockPanel HorizontalAlignment="Left">
+                    <StackPanel Name="benchStacky2"></StackPanel>
+                    <ScrollViewer HorizontalAlignment="Left" Width="auto" Background="Transparent" VerticalAlignment="Top" 
+                              HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Disabled">
+                        <DockPanel Margin="0,0,0,5" HorizontalAlignment="Left" Name="benchLeaderboardDocky"/>
+                    </ScrollViewer>
+                </DockPanel>
             </StackPanel>
 
             <StackPanel Name="CompetitionsTab" Visibility="Collapsed" Margin="10">

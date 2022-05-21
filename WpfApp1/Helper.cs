@@ -17,6 +17,7 @@ namespace MuhAimLabScoresViewer
         {
             s = s.Substring(s.IndexOf(':'), s.Length - s.IndexOf(':'));
             s = s.Trim(new char[] { ':', '\\', '"' });
+            s = s.Replace("\\r", string.Empty);
             s = s.Trim('"');
             s = s.Replace('"', ' ');
             s = s.Trim();
@@ -52,15 +53,16 @@ namespace MuhAimLabScoresViewer
                                 var content = File.ReadAllText(file.FullName);
                                 if (content.Contains(task))
                                 {
-                                    var levelandweapon = collectLevelAndWeaponFromES3(content);
-                                    return "https://apiclient.aimlab.gg/leaderboards/scores?taskSlug=" +
-                                        levelandweapon.level + "&weaponName=" + levelandweapon.weapon + "&map=42&mode=42&timeWindow=all";
+                                    var levelandweapon = collectLevelAndWeaponFromES3(content, out string foundTaskName);
+                                    if(foundTaskName == task)
+                                        return "https://apiclient.aimlab.gg/leaderboards/scores?taskSlug=" +
+                                                                                levelandweapon.level + "&weaponName=" + levelandweapon.weapon + "&map=42&mode=42&timeWindow=all";                                   
                                 }
                             }
 
             return null;
         }
-        private static LevelAndWeapon collectLevelAndWeaponFromES3(string filecontent)
+        private static LevelAndWeapon collectLevelAndWeaponFromES3(string filecontent, out string foundTaskName)
         {
             /** didn't work out cause stupid escape characters and \t\r\t\t spam
              * 
@@ -98,6 +100,7 @@ namespace MuhAimLabScoresViewer
 
             idline = uglyCleanup(idline);
             labelline = uglyCleanup(labelline);
+            foundTaskName = labelline;
             weaponline = uglyCleanup(weaponline);
 
             var result = new LevelAndWeapon()
