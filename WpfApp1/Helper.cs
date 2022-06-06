@@ -62,6 +62,29 @@ namespace MuhAimLabScoresViewer
 
             return null;
         }
+
+        public static LevelAndWeapon getLevelAndWeaponForTask(string taskName)
+        {
+            if (!Directory.Exists(viewModel.SteamLibraryPath)) return null;
+
+            DirectoryInfo[] dirs = new DirectoryInfo(viewModel.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories();
+            foreach (var dir in dirs)
+                foreach (var subdir in dir.GetDirectories())
+                    if (subdir.Name == "Levels")
+                        foreach (var file in subdir.GetDirectories()[0].GetFiles())
+                            if (file.Name == "level.es3")
+                            {
+                                var content = File.ReadAllText(file.FullName);
+                                if (content.Contains(taskName))
+                                {
+                                    var levelandweapon = collectLevelAndWeaponFromES3(content, out string foundTaskName);
+                                    if (foundTaskName == taskName) return levelandweapon;
+                                }                               
+                            }
+
+            return null;
+        }
+
         private static LevelAndWeapon collectLevelAndWeaponFromES3(string filecontent, out string foundTaskName)
         {
             /** didn't work out cause stupid escape characters and \t\r\t\t spam

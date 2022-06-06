@@ -44,6 +44,15 @@ namespace MuhAimLabScoresViewer
         private ObservableCollection<ScenarioSortingDirection> _SortDirections;
         private ScenarioSortingType _SortType;
         private ScenarioSortingDirection _SortDirection;
+        private int _currentTaskPageIndex = 0;
+
+        public int currentTaskPageIndex {
+            get => _currentTaskPageIndex;
+            set {
+                _currentTaskPageIndex = value;
+                NotifyPropertyChanged("currentTaskPageIndex");
+            }
+        }
 
         public string SteamLibraryPath
         {

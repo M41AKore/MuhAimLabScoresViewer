@@ -71,7 +71,7 @@ namespace MuhAimLabScoresViewer
                         countingEnergy.Add(currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].Energy);
                     }
 
-                    countingEnergy.Remove(countingEnergy.Min()); //best two scenarios count towards rank                  
+                    if(!currentBenchmark.Title.ToLower().Contains("easy") && countingEnergy.Count(e => e > 0) > 2) countingEnergy.Remove(countingEnergy.Min()); //best two scenarios count towards rank                  
                     currentBenchmark.EnergyPerTask.AddRange(countingEnergy);
                 }
             }

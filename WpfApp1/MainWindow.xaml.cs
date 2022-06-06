@@ -19,6 +19,7 @@ using static MuhAimLabScoresViewer.ObjectsAndStructs;
 using static OBS.libobs;
 using System.Data.SQLite;
 using System.Collections.Concurrent;
+using static MuhAimLabScoresViewer.APIStuff;
 
 namespace MuhAimLabScoresViewer
 {
@@ -95,7 +96,7 @@ namespace MuhAimLabScoresViewer
             SettingsTab.Visibility = Visibility.Collapsed;
             SettingsButton_BottomBorder.Visibility = Visibility.Visible;
 
-            this.Height = 500;
+            this.Height = 525;
             this.Width = 700;
         }
         private void BenchmarkButton_Click(object sender, RoutedEventArgs e)
@@ -465,7 +466,7 @@ namespace MuhAimLabScoresViewer
             Txt_BenchmarkRank.Text = rankName;
             //Txt_BenchmarkRank.Foreground = getColorFromHex(currentBenchmark.Ranks.FirstOrDefault(r => r.Name == rankName).Color);
             Txt_BenchmarkEnergy.Text = ((int)currentBenchmark.TotalEnergy).ToString();
-            createBenchmarkLeaderboard(currentBenchmark);
+            //createBenchmarkLeaderboard(currentBenchmark);
         }
         private async void launchCompetitionUpdates(List<HighscoreUpdateCall> calllist, Action<Task<HighscoreUpdateCall>> receiver)
         {
@@ -479,7 +480,11 @@ namespace MuhAimLabScoresViewer
         }
 
         //task leaderboard
-        private void getLeaderboardFor(string taskname)
+        LeaderboardResult currentTaskResults;
+        string currentTaskResultsName;
+        int currentTaskResultsLastPage = int.MaxValue;
+
+        private void getLeaderboardFor(string taskName)
         {
             if (!Directory.Exists(viewModel.SteamLibraryPath))
             {
@@ -487,7 +492,7 @@ namespace MuhAimLabScoresViewer
                 return;
             }
 
-            string call = buildAPICallFromTaskName(taskname);
+            string call = buildAPICallFromTaskName(taskName);
             if (call == null)
             {
                 var t = Task.Run(() =>
@@ -498,25 +503,29 @@ namespace MuhAimLabScoresViewer
                         searchInfo.Visibility = Visibility.Visible;
                     });
                     Thread.Sleep(3000);
-                    this.Dispatcher.Invoke(() =>
-                    {
-                        searchInfo.Visibility = Visibility.Hidden;
-                    });
+                    this.Dispatcher.Invoke(() => searchInfo.Visibility = Visibility.Hidden);
                 });
             }
             else
             {
-                APIStuff.httpstuff(call).ContinueWith(item => populateleaderboard(item.Result.results));
+                //APIStuff.httpstuff(call).ContinueWith(item => populateleaderboard(item.Result.results));
+                var stuff = Helper.getLevelAndWeaponForTask(taskName);
+                stuff.level = stuff.level.Replace("%20", " ");
+                APIStuff.runLeaderboardQuery(stuff.level, stuff.weapon, 0, 100).ContinueWith(result => populateleaderboard(result.Result, taskName));
             }
         }
-        private void populateleaderboard(Result[] results)
+        private void populateleaderboard(LeaderboardResult result, string taskName)
         {
             try
             {
                 this.Dispatcher.Invoke(() =>
                 {
                     addTaskLeaderboardHeaders(leaderboardheaderStacky);
-                    addTaskLeaderboardData(results, leaderboardStacky);
+                    addTaskLeaderboardData(result.aimlab.leaderboard.data, leaderboardStacky);
+                    currentTaskResults = result;
+                    currentTaskResultsName = taskName;
+                    viewModel.currentTaskPageIndex = 0;
+                    if (viewModel.currentTaskPageIndex <= 0) taskPageButton_Previous.Visibility = Visibility.Hidden;
                 });
             }
             catch (Exception e)
@@ -566,11 +575,11 @@ namespace MuhAimLabScoresViewer
 
             parent.Children.Add(headerDocky);
         }
-        private void addTaskLeaderboardData(Result[] results, StackPanel parent)
+        private void addTaskLeaderboardData(List<leaderboardData> results, StackPanel parent)
         {
             leaderboardStacky.Children.Clear();
 
-            for (int i = 0; i < results.Length; i++)
+            for (int i = 0; i < results.Count; i++)
             {
                 var entryDocky = new DockPanel()
                 {
@@ -578,48 +587,18 @@ namespace MuhAimLabScoresViewer
                     //Background = Brushes.Red
                     Width = 380
                 };
+            
+                entryDocky.Children.Add(new TextBlock() { Width = 40, Text = $"#{results[i].rank}",  }); // $"#{i + 1}", //placement
 
-                //placement
-                entryDocky.Children.Add(new TextBlock()
-                {
-                    Width = 40,
-                    Text = $"#{i + 1}",
-                });
-
-                //player name
-                entryDocky.Children.Add(new TextBlock()
-                {
-                    Width = 120,
-                    Text = results[i].username,
-                });
-
-                //score
-                entryDocky.Children.Add(new TextBlock()
-                {
-                    Width = 60,
-                    Text = results[i].score.ToString(),
-                });
-
-                //hits
-                entryDocky.Children.Add(new TextBlock()
-                {
-                    Width = 40,
-                    Text = results[i].hitstotal.ToString(),
-                });
-
-                //misses
-                entryDocky.Children.Add(new TextBlock()
-                {
-                    Width = 40,
-                    Text = results[i].missestotal.ToString(),
-                });
-
-                //accuracy
-                entryDocky.Children.Add(new TextBlock()
-                {
-                    Width = 60,
-                    Text = results[i].acctotal,
-                });
+                entryDocky.Children.Add(new TextBlock() { Width = 120, Text = results[i].username, });  //player name
+         
+                entryDocky.Children.Add(new TextBlock() { Width = 60, Text = results[i].score.ToString(), }); //score
+                
+                entryDocky.Children.Add(new TextBlock() { Width = 40, Text = results[i].shots_hit.ToString(), }); //hits
+              
+                entryDocky.Children.Add(new TextBlock() { Width = 40, Text = results[i].shots_missed.ToString(), }); //misses
+                
+                entryDocky.Children.Add(new TextBlock() { Width = 60, Text = $"{results[i].accuracy.ToString("0.##")}%", }); //accuracy
 
                 leaderboardStacky.Children.Add(entryDocky);
             }
@@ -663,6 +642,12 @@ namespace MuhAimLabScoresViewer
             }
 
             Trace.WriteLine("time for building datagrids and calls: " + timer.ElapsedMilliseconds);
+
+            /*foreach(var call in calllist)
+            {
+                Logger.log(call.taskname + " " + call.apicall);
+            }
+            ;*/
 
             if (!string.IsNullOrEmpty(viewModel.klutchId)) launchBenchmarkUpdates(calllist, updateBenchmarkWithHighscore);
             else showMessageBox("please set 'klutchId' in Settings!");
@@ -1259,8 +1244,8 @@ namespace MuhAimLabScoresViewer
             BenchmarksTab.Visibility = Visibility.Collapsed;
             BenchmarkButton_BottomBorder.Visibility = Visibility.Visible;
 
-            BenchmarkLeaderboardTab.Visibility = Visibility.Visible;
-            BenchmarkLeaderboardButton_BottomBorder.Visibility = Visibility.Hidden;
+            /*BenchmarkLeaderboardTab.Visibility = Visibility.Visible;
+            BenchmarkLeaderboardButton_BottomBorder.Visibility = Visibility.Hidden;*/
 
             CompetitionsTab.Visibility = Visibility.Collapsed;
             CompetitionButton_BottomBorder.Visibility = Visibility.Visible;
@@ -1412,10 +1397,7 @@ namespace MuhAimLabScoresViewer
                 Name = $"header_energytotal",
                 Text = "Total Energy"
             });
-            benchStacky2.Children.Add(headerstacky);
-
-
-
+            //benchStacky2.Children.Add(headerstacky);
 
 
             BenchmarkLeaderboardContenders = BenchmarkLeaderboardContenders.OrderByDescending(c => c.Benchmark.TotalEnergy).ToList();
@@ -1462,7 +1444,85 @@ namespace MuhAimLabScoresViewer
                     Text = contender.Benchmark.TotalEnergy.ToString(),
                     TextAlignment = TextAlignment.Center,
                 });
-                benchLeaderboardDocky.Children.Add(playerstacky);
+               // benchLeaderboardDocky.Children.Add(playerstacky);
+            }
+        }
+
+        private void taskPageButton_Next_Click(object sender, RoutedEventArgs e)
+        {
+            if(currentTaskResults != null)
+            {
+                viewModel.currentTaskPageIndex = currentTaskResultsLastPage + 1 > currentTaskResultsLastPage ? currentTaskResultsLastPage : viewModel.currentTaskPageIndex + 1;
+                
+                var stuff = Helper.getLevelAndWeaponForTask(currentTaskResultsName);
+                stuff.level = stuff.level.Replace("%20", " ");
+                APIStuff.runLeaderboardQuery(stuff.level, stuff.weapon, viewModel.currentTaskPageIndex * 100, (viewModel.currentTaskPageIndex + 1) * 100).ContinueWith(result => 
+                {
+                    try
+                    {
+                        if(result == null || result.Result == null)
+                        {
+                            viewModel.currentTaskPageIndex--;
+                            currentTaskResultsLastPage = viewModel.currentTaskPageIndex;
+                            //must be on last page
+                            //hide next button
+                            this.Dispatcher.Invoke(() => taskPageButton_Next.Visibility = Visibility.Hidden);
+                        }
+                        else
+                        {
+                            this.Dispatcher.Invoke(() =>
+                            {
+                                if (viewModel.currentTaskPageIndex + 1 >= currentTaskResultsLastPage) taskPageButton_Next.Visibility = Visibility.Hidden;
+                                if (viewModel.currentTaskPageIndex > 0) taskPageButton_Previous.Visibility = Visibility.Visible;
+
+                                addTaskLeaderboardData(result.Result.aimlab.leaderboard.data, leaderboardStacky);
+                                currentTaskResults = result.Result;
+                            });
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        showMessageBox(e.Message);
+                    }
+                });
+            }
+        }
+
+        private void taskPageButton_Previous_Click(object sender, RoutedEventArgs e)
+        {
+            if (currentTaskResults != null)
+            {
+                viewModel.currentTaskPageIndex = viewModel.currentTaskPageIndex - 1 < 0 ? 0 : viewModel.currentTaskPageIndex - 1;
+
+                var stuff = Helper.getLevelAndWeaponForTask(currentTaskResultsName);
+                stuff.level = stuff.level.Replace("%20", " ");
+                APIStuff.runLeaderboardQuery(stuff.level, stuff.weapon, viewModel.currentTaskPageIndex * 100, (viewModel.currentTaskPageIndex + 1) * 100).ContinueWith(result =>
+                {
+                    try
+                    {
+                        if (result == null || result.Result == null)
+                        {
+                            viewModel.currentTaskPageIndex = 0; //must be on first page
+                            //hide previous button
+                            this.Dispatcher.Invoke(() => taskPageButton_Previous.Visibility = Visibility.Hidden);
+                        }
+                        else
+                        {
+                            this.Dispatcher.Invoke(() =>
+                            {
+                                if (viewModel.currentTaskPageIndex <= 0) taskPageButton_Previous.Visibility = Visibility.Hidden;
+                                if (viewModel.currentTaskPageIndex < currentTaskResultsLastPage) taskPageButton_Next.Visibility = Visibility.Visible;
+
+                                addTaskLeaderboardData(result.Result.aimlab.leaderboard.data, leaderboardStacky);
+                                currentTaskResults = result.Result;
+                            });
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        showMessageBox(e.Message);
+                    }
+                });
             }
         }
     }

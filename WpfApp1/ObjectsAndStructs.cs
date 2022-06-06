@@ -18,7 +18,7 @@ namespace MuhAimLabScoresViewer
             public int miss { get; set; }
             public string acc { get; set; }
         }
-        public struct LevelAndWeapon
+        public class LevelAndWeapon
         {
             public string taskname;
             public string level;

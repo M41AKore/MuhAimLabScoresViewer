@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:MuhAimLabScoresViewer"
         mc:Ignorable="d"
         Title="MuhAimLabScoresViewer" 
-        Height="500" Width="700" ResizeMode="CanMinimize" MinHeight="500" MinWidth="700" 
+        Height="500" Width="700" ResizeMode="CanMinimize" MinHeight="525" MinWidth="700" 
         Closed="Window_Closed" Background="#fff" Activated="OnActivated">
     <!-- MaxHeight="500" MaxWidth="700" -->
 
@@ -15,6 +15,7 @@
         <local:InvertedBoolToVisibilityConverterCollapse x:Key="InvertedBoolToVisCollapse" />
         <local:BooleanToVisibilityConverterHide x:Key="BoolToVisHide" />
         <local:StringToIntConverter x:Key="StringToInt"/>
+        <local:PageIndexToNumberConverter x:Key="PageIndexToNumber"/>
     </Window.Resources>
 
 
@@ -44,13 +45,13 @@
                 <Rectangle Name="BenchmarkButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
                 <Button Click="BenchmarkButton_Click" Width="70" BorderThickness="0" Background="#fff">Benchmark</Button>
             </DockPanel>
-            <DockPanel Height="20" LastChildFill="True">
+            <!--<DockPanel Height="20" LastChildFill="True">
                 <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
                 <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
                 <Rectangle Fill="#000" DockPanel.Dock="Right" Width="1"/>
                 <Rectangle Name="BenchmarkLeaderboardButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
                 <Button Click="BenchmarkLeaderboardButton_Click" Width="70" BorderThickness="0" Background="#fff">BenchLeader</Button>
-            </DockPanel>
+            </DockPanel>-->
             <DockPanel Height="20" LastChildFill="True">
                 <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
                 <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
@@ -85,7 +86,7 @@
 
         <StackPanel Grid.Row="1" Grid.Column="0" Name="tabsContentStacky" Visibility="Visible">
 
-            <StackPanel Name="TasksTab" Margin="5" Height="400" MinHeight="400" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="690">
+            <StackPanel Name="TasksTab" Margin="5" Height="425" MinHeight="425" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="690">
                 <StackPanel Margin="0,5,0,0" Height="60" HorizontalAlignment="Center">
                     <Border Width="350" Height="35" BorderBrush="#000" BorderThickness="1" CornerRadius="3" Padding="2" >
                         <DockPanel HorizontalAlignment="Center">
@@ -104,6 +105,12 @@
                         <StackPanel Name="leaderboardStacky"></StackPanel>
                     </ScrollViewer>
                 </Border>
+
+                <DockPanel HorizontalAlignment="Center">
+                    <Button Click="taskPageButton_Previous_Click" Name="taskPageButton_Previous">back</Button>
+                    <TextBlock Text="{Binding currentTaskPageIndex, Converter={StaticResource PageIndexToNumber}}" TextAlignment="Center" VerticalAlignment="Center" Width="25"/>
+                    <Button Click="taskPageButton_Next_Click" Name="taskPageButton_Next">next</Button>
+                </DockPanel>
 
                 <!--<DataGrid Name="leaderboard" Width="800" Padding="20" Height="370"
                   RowBackground="Beige" AlternatingRowBackground="AntiqueWhite"/>-->
@@ -139,7 +146,7 @@
                 <StackPanel Name="benchStacky" Width="750"></StackPanel>
             </StackPanel>
 
-            <StackPanel Name="BenchmarkLeaderboardTab" Visibility="Collapsed">
+            <!--<StackPanel Name="BenchmarkLeaderboardTab" Visibility="Collapsed">
                 <DockPanel>
                     <Button Click="Button_Click_1" Width="30" HorizontalAlignment="Right" Height="30" VerticalAlignment="Top">
                         <Image Source="Images/icons8-refresh-30.png" Height="25" Width="25"></Image>
@@ -152,7 +159,7 @@
                         <DockPanel Margin="0,0,0,5" HorizontalAlignment="Left" Name="benchLeaderboardDocky"/>
                     </ScrollViewer>
                 </DockPanel>
-            </StackPanel>
+            </StackPanel>-->
 
             <StackPanel Name="CompetitionsTab" Visibility="Collapsed" Margin="10">
                 <DockPanel>
