@@ -1,0 +1,78 @@
+﻿<Page x:Class="MuhAimLabScoresViewer.AimLabHistoryTab"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:MuhAimLabScoresViewer"
+      mc:Ignorable="d" 
+      d:DesignHeight="750" d:DesignWidth="1050" Background="White">
+
+    <StackPanel>
+        <DockPanel>
+            <Label Margin="10" Drop="DragDropInput" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray">Drag 'n' Drop</Label>
+            <Button Width="80" Height="25" Click="Button_Click_4">local DB data</Button>
+            <Label Name="GraphTitle" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center"></Label>
+        </DockPanel>
+        <DockPanel Name="contentDocky">
+            <StackPanel>
+                <DockPanel Margin="10,0,0,10">
+                    <ComboBox ItemsSource="{Binding Path=SortTypes}" SelectedItem="{Binding Path=SortType}" DisplayMemberPath="Name" 
+                                      Width="80" Margin="0,0,10,0" HorizontalAlignment="Left"/>
+                    <ComboBox ItemsSource="{Binding Path=SortDirections}" SelectedItem="{Binding Path=SortDirection}" DisplayMemberPath="Name" 
+                                      Width="100" HorizontalAlignment="Left"/>
+                </DockPanel>
+
+                <ScrollViewer Name="ScenariosScroller" HorizontalAlignment="Left" Width="250" Background="Transparent" VerticalAlignment="Top" 
+                              HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Visible" Height="540">
+                    <StackPanel Margin="10,0,0,5" HorizontalAlignment="Left" Name="scenariosStacky"/>
+                </ScrollViewer>
+            </StackPanel>
+
+            <StackPanel Margin="0,-15,0,0" Name="graphStacky"></StackPanel>
+
+            <StackPanel Name="Aside_Right" HorizontalAlignment="Right" Margin="0,0,10,0" Width="140">
+                <ComboBox ItemsSource="{Binding Path=GraphPlayDisplayCounts}" SelectedItem="{Binding Path=GraphPlayDisplayCount}"
+                    Width="80" Margin="0,0,10,0" HorizontalAlignment="Left"/>
+                
+                <Border BorderBrush="Black" BorderThickness="1" CornerRadius="3" Padding="2">
+                    <Grid Name="InfoSectionGrid" Height="250">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="70"/>
+                            <ColumnDefinition Width="70"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="30"/>
+                            <RowDefinition Height="30"/>
+                        </Grid.RowDefinitions>
+
+                        <Label Grid.Column="0" Grid.Row="0" VerticalAlignment="Center">Plays:</Label>
+                        <TextBlock Grid.Column="1" Grid.Row="0" VerticalAlignment="Center" Name="txt_Plays"></TextBlock>
+
+                        <Label Grid.Column="0" Grid.Row="1" VerticalAlignment="Center">Highscore:</Label>
+                        <TextBlock Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Name="txt_Highscore"></TextBlock>
+
+                        <Label Grid.Column="0" Grid.Row="2" VerticalAlignment="Center">Average:</Label>
+                        <TextBlock Grid.Column="1" Grid.Row="2" VerticalAlignment="Center" Name="txt_Average"></TextBlock>
+
+                        <Label Grid.Column="0" Grid.Row="3" VerticalAlignment="Center">Median:</Label>
+                        <TextBlock Grid.Column="1" Grid.Row="3" VerticalAlignment="Center" Name="txt_Median"></TextBlock>
+
+                        <Label Grid.Column="0" Grid.Row="4" VerticalAlignment="Center">Min:</Label>
+                        <TextBlock Grid.Column="1" Grid.Row="4" VerticalAlignment="Center" Name="txt_MinScore"></TextBlock>
+
+                        <Label Grid.Column="0" Grid.Row="5" VerticalAlignment="Center">Hits:</Label>
+                        <TextBlock Grid.Column="1" Grid.Row="5" VerticalAlignment="Center" Name="txt_Hits"></TextBlock>
+
+                        <Label Grid.Column="0" Grid.Row="6" VerticalAlignment="Center">Misses:</Label>
+                        <TextBlock Grid.Column="1" Grid.Row="6" VerticalAlignment="Center" Name="txt_Misses"></TextBlock>
+                    </Grid>
+                </Border>
+            </StackPanel>
+        </DockPanel>
+    </StackPanel>
+</Page>

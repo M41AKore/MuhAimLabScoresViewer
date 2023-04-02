@@ -9,6 +9,7 @@ using System.Windows.Media;
 using System.Xml;
 using System.Xml.Serialization;
 using static MuhAimLabScoresViewer.MainWindow;
+using static MuhAimLabScoresViewer.BenchmarkTab;
 using static MuhAimLabScoresViewer.Helper;
 using System.Diagnostics;
 
@@ -18,19 +19,19 @@ namespace MuhAimLabScoresViewer
     public class Benchmark
     {
         [XmlElement("Title")]
-        public string Title { get; set; }
+        public string? Title { get; set; }
 
         [XmlArray("Ranks")]
         [XmlArrayItem("Rank")]
-        public Rank[] Ranks { get; set; }
+        public Rank[]? Ranks { get; set; }
 
         [XmlArray("Categories")]
         [XmlArrayItem("Category")]
-        public Category[] Categories { get; set; }
+        public Category[]? Categories { get; set; }
 
-        public List<float> EnergyPerTask;
+        public List<float>? EnergyPerTask;
         public float TotalEnergy;
-        public static List<KeyValuePair<string, TextBlock>> benchScoreFieldLookup;
+        public static List<KeyValuePair<string, TextBlock>>? benchScoreFieldLookup;
 
 
         public static string calculateBenchmarkRank(StackPanel benchStacky)
@@ -187,11 +188,6 @@ namespace MuhAimLabScoresViewer
                         var scenarioDocky = new DockPanel();
                         var task = currentBenchmark.Categories[i].Subcategories[j].Scenarios[k]; //shorthand
                                                                                                  
-                        //task name
-                        if(currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].Name == "rA Threewide") //and airtrack
-                        {
-
-                        }
                         var parts = getAuthorIdAndWorkshopIdFromTaskName(currentBenchmark.Categories[i].Subcategories[j].Scenarios[k].Name)?.Split(' ');
                         var tb = new TextBlock()
                         {
@@ -201,7 +197,7 @@ namespace MuhAimLabScoresViewer
                             HorizontalAlignment = HorizontalAlignment.Left,
                             TextAlignment = TextAlignment.Left,
                         };
-                        tb.MouseDown += MainWindow.Instance.NameTB_MouseDown;
+                        tb.MouseDown += (MainWindow.Instance.windowTabs[1] as BenchmarkTab).NameTB_MouseDown;
                         scenarioDocky.Children.Add(tb);
 
                         //task score
@@ -219,7 +215,7 @@ namespace MuhAimLabScoresViewer
 
                         //rank requirements
                         var requirementsDocky = new DockPanel();
-                        for (int r = 0; r < task.RankScoreRequirements.Length; r++)
+                        for (int r = 0; r < task.RankScoreRequirements?.Length; r++)
                         {
                             requirementsDocky.Children.Add(new TextBlock()
                             {
@@ -315,10 +311,10 @@ namespace MuhAimLabScoresViewer
     public class Rank
     {
         [XmlElement("Name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [XmlElement("Color")]
-        public string Color { get; set; }
+        public string? Color { get; set; }
 
         [XmlElement("TaskEnergyRequirement")]
         public int TaskEnergyRequirement { get; set; }
@@ -331,36 +327,36 @@ namespace MuhAimLabScoresViewer
     public class Category
     {
         [XmlElement("Name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [XmlArray("Subcategories")]
         [XmlArrayItem("Subcategory")]
-        public Subcategory[] Subcategories { get; set; }
+        public Subcategory[]? Subcategories { get; set; }
     }
 
     [XmlRoot("Subcategory")]
     public class Subcategory
     {
         [XmlElement("Name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [XmlArray("Scenarios")]
         [XmlArrayItem("Scenario")]
-        public BenchScenario[] Scenarios { get; set; }
+        public BenchScenario[]? Scenarios { get; set; }
     }
 
     [XmlRoot("Scenario")]
     public class BenchScenario
     {
         [XmlElement("Name")]
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         [XmlElement("AlternativeName")]
-        public string AlternativeName { get; set; }
+        public string? AlternativeName { get; set; }
 
         [XmlArray("RankScoreRequirements")]
         [XmlArrayItem("RankScore")]
-        public int[] RankScoreRequirements { get; set; }
+        public int[]? RankScoreRequirements { get; set; }
 
         public int Score { get; set; }
         public int Energy { get; set; }

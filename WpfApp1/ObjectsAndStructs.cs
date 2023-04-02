@@ -62,6 +62,11 @@ namespace MuhAimLabScoresViewer
             public DateTime Date;
             public string Score;
             public string Accuracy;
+            public string Hits;
+            public string Shots;
+            public string Misses;
+            public string Targets;
+            public string Kills;
         }
 
         public class Holder

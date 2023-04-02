@@ -1,0 +1,40 @@
+﻿<Page x:Class="MuhAimLabScoresViewer.TasksTab"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:MuhAimLabScoresViewer"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="700" Background="White">
+
+    <Page.Resources>
+        <local:PageIndexToNumberConverter x:Key="PageIndexToNumber"/>
+    </Page.Resources>
+
+    <StackPanel Name="TasksTabStacky" Margin="5" Height="425" MinHeight="425" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" MinWidth="690">
+        <StackPanel Margin="0,5,0,0" Height="60" HorizontalAlignment="Center">
+            <Border Width="350" Height="35" BorderBrush="#000" BorderThickness="1" CornerRadius="3" Padding="2" >
+                <DockPanel HorizontalAlignment="Center">
+                    <Label VerticalAlignment="Center">Task Name:</Label>
+                    <TextBox Width="250" VerticalAlignment="Center" TextAlignment="Left" KeyDown="TextBox_KeyDown"></TextBox>
+                </DockPanel>
+            </Border>
+            <TextBlock Margin="86,5,5,15" Name="searchInfo" TextAlignment="Center" VerticalAlignment="Top" HorizontalAlignment="Left" Visibility="Hidden">Could not find matching scenario!</TextBlock>
+        </StackPanel>
+
+        <Border Width="550" Height="25" BorderBrush="#000" BorderThickness="1" CornerRadius="3" Padding="2" Margin="0,0,0,1" >
+            <StackPanel Name="leaderboardheaderStacky" HorizontalAlignment="Center"></StackPanel>
+        </Border>
+        <Border Width="550" Height="300" BorderBrush="#000" BorderThickness="1" CornerRadius="3" Padding="2" >
+            <ScrollViewer Name="leaderboardScroller" HorizontalAlignment="Center" Width="525" Background="Transparent" VerticalAlignment="Top" VerticalScrollBarVisibility="Auto">
+                <StackPanel Name="leaderboardStacky"></StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <DockPanel HorizontalAlignment="Center">
+            <Button Click="taskPageButton_Previous_Click" Name="taskPageButton_Previous">back</Button>
+            <TextBlock Text="{Binding currentTaskPageIndex, Converter={StaticResource PageIndexToNumber}}" TextAlignment="Center" VerticalAlignment="Center" Width="25"/>
+            <Button Click="taskPageButton_Next_Click" Name="taskPageButton_Next">next</Button>
+        </DockPanel>
+    </StackPanel>
+</Page>

@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using static MuhAimLabScoresViewer.MainWindow;
+using static MuhAimLabScoresViewer.CompetitionTab;
 
 namespace MuhAimLabScoresViewer
 {
@@ -12,7 +13,7 @@ namespace MuhAimLabScoresViewer
     {
         public string Name;
         public string klutchId;
-        public long mostRecentTimestamp;
+        public DateTime mostRecentTimestamp;
         public CompetitorCompetitionPart[] partResults;
         public double totalPoints;
 

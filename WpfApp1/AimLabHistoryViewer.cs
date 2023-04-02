@@ -20,8 +20,9 @@ namespace MuhAimLabScoresViewer
     public class AimLabHistoryViewer
     {
         public static List<ScenarioHistory> Scenarios;
+        public static ScenarioHistory currentScenario;
 
-        public static AimLabHistory getData(string filepath)
+        public static AimLabHistory? getData(string filepath)
         {
             var filecontent = File.ReadAllText(filepath);
             if (filecontent.StartsWith("[["))
@@ -55,6 +56,8 @@ namespace MuhAimLabScoresViewer
 
             foreach (var historyEntry in historyEntries)
             {
+                if(historyEntries == null) continue;
+
                 var existing = Scenarios.FirstOrDefault(s => s.Identification == historyEntry.taskName);
                 if (existing == null)
                 {
@@ -85,7 +88,9 @@ namespace MuhAimLabScoresViewer
     
         public static void createScenariosGUI(string sortType = "Name", string sortDirection = "Ascending")
         {
-            MainWindow.Instance.scenariosStacky.Children.Clear();
+            var tab = (MainWindow.Instance.windowTabs[3] as AimLabHistoryTab);
+            if (tab == null) return;
+            tab.scenariosStacky.Children.Clear();
 
             switch (sortType)
             {
@@ -117,7 +122,7 @@ namespace MuhAimLabScoresViewer
                     HorizontalContentAlignment = System.Windows.HorizontalAlignment.Left,
                 };
                 btn.Click += Btn_Click;
-                MainWindow.Instance.scenariosStacky.Children.Add(btn);
+                tab.scenariosStacky.Children.Add(btn);
             }
         }
         
@@ -127,13 +132,16 @@ namespace MuhAimLabScoresViewer
             if (btn != null)
             {
                 int i = int.Parse(btn.Name.Split('_')[1]);
-                MainWindow.Instance.GraphTitle.Content = !string.IsNullOrEmpty(Scenarios[i].Name) ? Scenarios[i].Name : Scenarios[i].Identification;
-                createDataPoints(Scenarios[i]);
+                ((AimLabHistoryTab)MainWindow.Instance.windowTabs[3]).GraphTitle.Content = !string.IsNullOrEmpty(Scenarios[i].Name) ? Scenarios[i].Name : Scenarios[i].Identification;
+                createDataPoints(Scenarios[i], MainWindow.viewModel.GraphPlayDisplayCount);
             }
         }
 
-        private static void createDataPoints(ScenarioHistory scenario)
+        public static void createDataPoints(ScenarioHistory scenario, string playCount = "all")
         {
+            currentScenario = scenario;
+            if (currentScenario == null) return;
+
             PlotView pv = new PlotView();
             pv.Height = 600;
             pv.Width = 600;
@@ -153,18 +161,40 @@ namespace MuhAimLabScoresViewer
             FunctionSeries fs = new FunctionSeries();
             //fs.TrackerFormatString = "Time: {2:dd.MM.yyyy} X: {4:0.###}";
 
-            for (int i = 0; i < scenario.Plays.Count; i++)
+            int count = scenario.Plays.Count;
+            switch(playCount)
+            {
+                case "last 50":
+                    count = 50;
+                    break;
+                case "last 100":
+                    count = 100;
+                    break;
+                case "last 200":
+                    count = 200;
+                    break;
+                case "last 500":
+                    count = 500;
+                    break;
+                case "last 1000":
+                    count = 1000;
+                    break;
+                default: //inlc "all", ^ Plays.Count
+                    break;
+            }
+            var plays = count < scenario.Plays.Count ? scenario.Plays.TakeLast(count).ToList() : scenario.Plays;
+
+            for (int i = 0; i < plays.Count; i++)
             {
                 //var playDate = DateTime.Parse(scenario.Plays[i].Date);
-                fs.Points.Add(new OxyPlot.DataPoint(i + 1, int.Parse(scenario.Plays[i].Score))); //DateTimeAxis.ToDouble(playDate)
-
+                fs.Points.Add(new OxyPlot.DataPoint(i + 1, int.Parse(plays[i].Score))); //DateTimeAxis.ToDouble(playDate)
             }
 
             //caluclate medians
             var medians = new List<double>();
-            for (int i = 0; i < scenario.Plays.Count; i++)
+            for (int i = 0; i < plays.Count; i++)
             {
-                var group = scenario.Plays.Take(i + 1).OrderBy(p => int.Parse(p.Score)).ToArray();
+                var group = plays.Take(i + 1).OrderBy(p => int.Parse(p.Score)).ToArray();
                 if ((i + 1) % 2 == 0) //if even, calculate median at half
                 {
                     int halfPlusOne = (i + 1) / 2; // f.e. 12 / 2 = 6, which would be top of bottom half, but since it's index it's 7th, aka first of top half
@@ -179,12 +209,9 @@ namespace MuhAimLabScoresViewer
             //fs2.TrackerFormatString = "Time: {2:dd.MM.yyyy} X: {4:0.###}";
 
             for (int i = 0; i < medians.Count; i++)
-            {
                 fs2.Points.Add(new OxyPlot.DataPoint(i + 1, medians[i]));
-            }
 
             fs2.Color = OxyColor.FromArgb(255, 255, 0, 0);
-
 
             PlotModel n = new PlotModel();
             n.Series.Add(fs);
@@ -202,28 +229,33 @@ namespace MuhAimLabScoresViewer
             n.Axes.Add(new LinearAxis());
             pv.Model = n;
 
-            if (MainWindow.Instance.graphStacky.Children.Count > 0) MainWindow.Instance.graphStacky.Children.RemoveAt(0);
-            MainWindow.Instance.graphStacky.Children.Add(pv);
+            var tab = MainWindow.Instance.windowTabs[3] as AimLabHistoryTab;
+            if (tab == null) return;
+            if (tab.graphStacky.Children.Count > 0) tab.graphStacky.Children.RemoveAt(0);
+            tab.graphStacky.Children.Add(pv);
 
             //other info section
-            var orderedPlays = scenario.Plays.OrderBy(p => int.Parse(p.Score)).ToArray();
+            var orderedPlays = plays.OrderBy(p => int.Parse(p.Score)).ToArray();
 
-            MainWindow.Instance.txt_Plays.Text = scenario.Plays.Count.ToString();
-            MainWindow.Instance.txt_Highscore.Text = orderedPlays.Last().Score.ToString();
-            MainWindow.Instance.txt_Average.Text = scenario.Plays.Average(p => int.Parse(p.Score)).ToString("#.##");
+            tab.txt_Plays.Text = plays.Count.ToString();
+            tab.txt_Highscore.Text = orderedPlays.Last().Score.ToString();
+            tab.txt_Average.Text = plays.Average(p => int.Parse(p.Score)).ToString("#.##");
 
             //median
-            if (scenario.Plays.Count % 2 == 0) //if even, calculate median at half
+            if (plays.Count % 2 == 0) //if even, calculate median at half
             {
-                int halfPlusOne = int.Parse(orderedPlays[scenario.Plays.Count / 2].Score);
-                int halfMinusOne = int.Parse(orderedPlays[(scenario.Plays.Count / 2) - 1].Score);
+                int halfPlusOne = int.Parse(orderedPlays[plays.Count / 2].Score);
+                int halfMinusOne = int.Parse(orderedPlays[(plays.Count / 2) - 1].Score);
                 double median = ((double)(halfPlusOne + halfMinusOne) / 2);
-                MainWindow.Instance.txt_Median.Text = median.ToString();
+                tab.txt_Median.Text = median.ToString();
             }
-            else
-            {
-                MainWindow.Instance.txt_Median.Text = orderedPlays[scenario.Plays.Count / 2].Score.ToString();
-            }
+            else tab.txt_Median.Text = orderedPlays[plays.Count / 2].Score.ToString();
+
+            tab.txt_MinScore.Text = orderedPlays.First()?.Score;
+
+
+            tab.txt_Hits.Text = orderedPlays.First().Hits;
+            tab.txt_Misses.Text = orderedPlays.First().Misses;
         }
 
         public static void pullDataFromLocalDB()
@@ -257,12 +289,28 @@ namespace MuhAimLabScoresViewer
                     }
 
                     string? createDate = row["createDate"].ToString();
+
+                    var perfString = row["performance"].ToString();
+
+                    var parts = perfString.Replace('\\', ' ').Split(',');
+
+                    string? acc = parts.FirstOrDefault(p => p.Contains("accTotal"))?.Split(':')[1];
+                    string? kills = parts.FirstOrDefault(p => p.Contains("killTotal"))?.Split(':')[1].Replace('}', ' ').Trim();
+                    string? shots = parts.FirstOrDefault(p => p.Contains("shotsTotal"))?.Split(':')[1];
+                    string? targets = parts.FirstOrDefault(p => p.Contains("targetsTotal"))?.Split(':')[1];
+                    string hits = shots != null && acc != null ? ((int)(int.Parse(shots) * (float.Parse(acc) * 0.01f))).ToString() : "0";
+
                     existing.Plays.Add(new Play()
                     {
                         DateString = createDate,
                         Date = createDate == null ? DateTime.MinValue : DateTime.Parse(createDate),
                         Score = row["score"].ToString(),
-                        Accuracy = "", //parse performance item for this
+                        Accuracy = acc ?? "0",
+                        Hits = hits,
+                        Shots = shots ?? "0",
+                        Kills = kills ?? "0",
+                        Targets = targets ?? "0",
+                        Misses = shots == null ? "0" : (int.Parse(shots) - int.Parse(hits)).ToString(),
                     });
                 }
 

@@ -17,6 +17,7 @@ using OxyPlot.Series;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Wpf;
+using static MuhAimLabScoresViewer.APIStuff;
 
 namespace MuhAimLabScoresViewer
 {
@@ -155,11 +156,12 @@ namespace MuhAimLabScoresViewer
 
             MainWindow.Instance.Dispatcher.Invoke(() =>
             {
-                if (currentScenario == null) MainWindow.Instance.TrackerGraphTitle.Content = "No plays found yet in given Session window!";
+                var tab = MainWindow.Instance.windowTabs[4] as LiveTrackerTab;
+                if (currentScenario == null) tab.TrackerGraphTitle.Content = "No plays found yet in given Session window!";
                 else
                 {
-                    MainWindow.Instance.TrackerGraphTitle.Content = !string.IsNullOrEmpty(currentScenario.Name) ? currentScenario.Name : currentScenario.Identification;
-                    MainWindow.Instance.trackergraphStacky.Children.Clear();
+                    tab.TrackerGraphTitle.Content = !string.IsNullOrEmpty(currentScenario.Name) ? currentScenario.Name : currentScenario.Identification;
+                    tab.trackergraphStacky.Children.Clear();
                     createDataPoints(currentScenario);
                 }
             });   
@@ -212,14 +214,17 @@ namespace MuhAimLabScoresViewer
             n.Axes.Add(new LinearAxis());
             pv.Model = n;
 
-            if (MainWindow.Instance.trackergraphStacky.Children.Count > 0) MainWindow.Instance.trackergraphStacky.Children.RemoveAt(0);
-            MainWindow.Instance.trackergraphStacky.Children.Add(pv);
+            var tab = MainWindow.Instance.windowTabs[4] as LiveTrackerTab;
+            if(tab == null) return;
+
+            if (tab.trackergraphStacky.Children.Count > 0) tab.trackergraphStacky.Children.RemoveAt(0);
+            tab.trackergraphStacky.Children.Add(pv);
 
             //other info section
             var orderedPlays = scenario.Plays.OrderBy(p => int.Parse(p.Score)).ToArray();
-            MainWindow.Instance.txt_TrackerPlays.Text = scenario.Plays.Count.ToString();
-            MainWindow.Instance.txt_TrackerHighscore.Text = orderedPlays.Last().Score.ToString();
-            MainWindow.Instance.txt_TrackerAverage.Text = scenario.Plays.Average(p => int.Parse(p.Score)).ToString("#.##");
+            tab.txt_TrackerPlays.Text = scenario.Plays.Count.ToString();
+            tab.txt_TrackerHighscore.Text = orderedPlays.Last().Score.ToString();
+            tab.txt_TrackerAverage.Text = scenario.Plays.Average(p => int.Parse(p.Score)).ToString("#.##");
 
             //median
             if (scenario.Plays.Count % 2 == 0) //if even, calculate median at half
@@ -227,11 +232,11 @@ namespace MuhAimLabScoresViewer
                 int halfPlusOne = int.Parse(orderedPlays[scenario.Plays.Count / 2].Score);
                 int halfMinusOne = int.Parse(orderedPlays[(scenario.Plays.Count / 2) - 1].Score);
                 double median = ((double)(halfPlusOne + halfMinusOne) / 2);
-                MainWindow.Instance.txt_TrackerMedian.Text = median.ToString();
+                tab.txt_TrackerMedian.Text = median.ToString();
             }
             else
             {
-                MainWindow.Instance.txt_TrackerMedian.Text = orderedPlays[scenario.Plays.Count / 2].Score.ToString();
+                tab.txt_TrackerMedian.Text = orderedPlays[scenario.Plays.Count / 2].Score.ToString();
             }
         }
 
@@ -248,57 +253,59 @@ namespace MuhAimLabScoresViewer
             {
                 Logger.log($"last result for '{rows[i]["taskName"]}' = '{rows[i]["score"]}'");
 
-                string call = buildAPICallFromTaskID(rows[i]["taskName"].ToString());
-                compareToHighscore(call, rows[i]["score"].ToString(), rows[i]["performance"].ToString());
+                //string call = buildAPICallFromTaskID(rows[i]["taskName"].ToString());
+                var stuff = Helper.getLevelAndWeaponForTask(rows[i]["taskName"].ToString());
+                compareToHighscore(stuff, rows[i]["score"].ToString(), rows[i]["performance"].ToString());
             }
         }
 
-        public static async void compareToHighscore(string call, string achievedScore, string performanceString)
+        public static async void compareToHighscore(LevelAndWeapon stuff, string achievedScore, string performanceString)
         {
-            await Task.Run(async () => await APIStuff.httpstuff(call).ContinueWith(resultItem =>
-            {
-                var playerResult = resultItem.Result.results.FirstOrDefault(r => r.klutchId == currentSettings.klutchId);
-                if (playerResult != null)
-                {
-                    Logger.log($"api highscore = '{playerResult.score}', this score = '{achievedScore}'");
-                    if (int.TryParse(achievedScore, out int newscore) && newscore >= playerResult.score)
-                    {
-                        Logger.log("highscore detected!");
+            if (stuff == null) return;
+            var r = await APIStuff.runLeaderboardQuery(stuff.level.Replace("%20", " "), stuff.weapon, 0, 100);
+            if (r == null) return;
 
-                        //determine if highscore was set with this attempt
-                        var performanceJson = JsonConvert.DeserializeObject<Performance>(performanceString);
-                        if (performanceJson != null)
+            var playerResult = r.aimlab.leaderboard.data.FirstOrDefault(r => r.user_id == SettingsTab.currentSettings.klutchId);
+            if (playerResult != null)
+            {
+                Logger.log($"api highscore = '{playerResult.score}', this score = '{achievedScore}'");
+                if (int.TryParse(achievedScore, out int newscore) && newscore >= playerResult.score)
+                {
+                    Logger.log("highscore detected!");
+
+                    //determine if highscore was set with this attempt
+                    var performanceJson = JsonConvert.DeserializeObject<Performance>(performanceString);
+                    if (performanceJson != null)
+                    {
+                        if (performanceJson.hitsTotal != playerResult.shots_hit
+                            //|| performanceJson.missesTotal != playerResult.shots_missed
+                            || performanceJson.targetsTotal != playerResult.targets)
                         {
-                            if (performanceJson.hitsTotal != playerResult.hitstotal
-                                || performanceJson.missesTotal != playerResult.missestotal
-                                || performanceJson.targetsTotal != playerResult.targetstotal)
+                            //if any of these values is different, this is most likely a new result
+                            //potentially still record duplicate score attempts
+                            if (newscore == playerResult.score && viewModel.AutoRecordDuplicates)
                             {
-                                //if any of these values is different, this is most likely a new result
-                                //potentially still record duplicate score attempts
-                                if (newscore == playerResult.score && viewModel.AutoRecordDuplicates)
-                                {
-                                    doHighscoreRecordingStuff(newscore);
-                                }
-                                else if (newscore > playerResult.score) //OR, result hasn't made it to API yet, so only record if higher
-                                {
-                                    doHighscoreRecordingStuff(newscore);
-                                }
+                                doHighscoreRecordingStuff(newscore);
                             }
-                            else
+                            else if (newscore > playerResult.score) //OR, result hasn't made it to API yet, so only record if higher
                             {
-                                //last registered score seems to have set new API highscore, therefore we save replay
                                 doHighscoreRecordingStuff(newscore);
                             }
                         }
+                        else
+                        {
+                            //last registered score seems to have set new API highscore, therefore we save replay
+                            doHighscoreRecordingStuff(newscore);
+                        }
                     }
                 }
-            }));
+            }
         }
 
         private static void doHighscoreRecordingStuff(int score)
         {
             MainWindow.Instance.displayAutoRecordStatusMessage($"New highscore of '{score}' detected!");
-            if (viewModel.onSaveReplayTakeScreenshot) MainWindow.Instance.takeScreenshot();
+            if (viewModel.onSaveReplayTakeScreenshot) (MainWindow.Instance.windowTabs[5] as SettingsTab).takeScreenshot();
             simulateKeyPress(viewModel.OBS_Key);
         }
 

@@ -23,7 +23,6 @@ namespace MuhAimLabScoresViewer
             public string Name { get; set; }
         }
 
-
         private string _SteamLibraryPath;
         private string _klutchId;
         private Visibility _borderVisible = Visibility.Collapsed;
@@ -45,14 +44,11 @@ namespace MuhAimLabScoresViewer
         private ScenarioSortingType _SortType;
         private ScenarioSortingDirection _SortDirection;
         private int _currentTaskPageIndex = 0;
-
-        public int currentTaskPageIndex {
-            get => _currentTaskPageIndex;
-            set {
-                _currentTaskPageIndex = value;
-                NotifyPropertyChanged("currentTaskPageIndex");
-            }
-        }
+        private string _BenchmarkSpreadSheetId;
+        private Visibility _KlutchIdFinderLoading = Visibility.Collapsed;
+        private List<string> _GraphPlayDisplayCounts;
+        private string _GraphPlayDisplayCount;
+        private bool _showTaskDuration;
 
         public string SteamLibraryPath
         {
@@ -256,14 +252,69 @@ namespace MuhAimLabScoresViewer
                 NotifyPropertyChanged("SortDirection");
             }
         }
-
+        public int currentTaskPageIndex
+        {
+            get => _currentTaskPageIndex;
+            set {
+                _currentTaskPageIndex = value;
+                NotifyPropertyChanged("currentTaskPageIndex");
+            }
+        }
+        public string BenchmarkSpreadSheetId
+        {
+            get => _BenchmarkSpreadSheetId;
+            set
+            {
+                _BenchmarkSpreadSheetId = value;
+                NotifyPropertyChanged("BenchmarkSpreadSheetId");
+            }
+        }
+        public Visibility KlutchIdFinderLoading
+        {
+            get => _KlutchIdFinderLoading;
+            set
+            {
+                _KlutchIdFinderLoading = value;
+                NotifyPropertyChanged("KlutchIdFinderLoading");
+            }
+        }
+        public List<string> GraphPlayDisplayCounts
+        {
+            get => _GraphPlayDisplayCounts;
+            set { 
+                _GraphPlayDisplayCounts = value;
+                NotifyPropertyChanged("GraphPlayDisplayCounts");
+            }
+        }
+        public string GraphPlayDisplayCount
+        {
+            get => _GraphPlayDisplayCount;
+            set
+            {
+                if(_GraphPlayDisplayCount != value && _GraphPlayDisplayCount != null)
+                {
+                    AimLabHistoryViewer.createDataPoints(AimLabHistoryViewer.currentScenario, value);
+                }
+                _GraphPlayDisplayCount = value;
+                NotifyPropertyChanged("GraphPlayDisplayCount");
+            }
+        }
+        public bool ShowUserTaskDuration
+        {
+            get => _showTaskDuration;
+            set
+            {
+                _showTaskDuration = value;
+                NotifyPropertyChanged("ShowUserTaskDuration");
+            }
+        }
 
         private void NotifyPropertyChanged(string info)
         {
             if (PropertyChanged != null) PropertyChanged(this, new PropertyChangedEventArgs(info));
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
         public ViewModel()
         {
@@ -288,6 +339,17 @@ namespace MuhAimLabScoresViewer
                 new ScenarioSortingDirection(){ Id=1, Name="Descending"},
             };
             SortDirection = SortDirections[0];
+
+            GraphPlayDisplayCounts = new List<string>
+            {
+                "all",
+                "last 50",
+                "last 100",
+                "last 200",
+                "last 500",
+                "last 1000",
+            };
+            GraphPlayDisplayCount = GraphPlayDisplayCounts[0];
         }
     }
 }

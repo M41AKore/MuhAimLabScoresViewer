@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Input;
 using System.Xml.Serialization;
 using static MuhAimLabScoresViewer.MainWindow;
+using static MuhAimLabScoresViewer.SettingsTab;
 
 namespace MuhAimLabScoresViewer
 {
@@ -59,57 +55,87 @@ namespace MuhAimLabScoresViewer
         [XmlElement]
         public bool LiveTrackerEnabled { get; set; }
 
+        [XmlElement]
+        public string BenchmarkSheetId { get; set; }
+
+        [XmlElement]
+        public bool ShowUserTaskDuration { get; set; }
+
 
         public static void loadSettings()
         {
-            if (!File.Exists("./settings.xml"))
+            try
             {
-                //File.WriteAllText("./settings.xml", "<Settings><SteamLibraryPath></SteamLibraryPath><klutchId></klutchId></Settings>");
-                XmlSerializer.serializeToXml<Settings>(new Settings(), settingsPath);
+                if (!File.Exists("./settings.xml")) XmlSerializer.serializeToXml<Settings>(new Settings(), settingsPath);
+
+                var settings = XmlSerializer.deserializeXml<Settings>("./settings.xml");
+                if (settings != null)
+                {
+                    viewModel.klutchId = settings.klutchId;
+                    var tab = MainWindow.Instance.windowTabs[5] as SettingsTab;
+                    if (settings.RecordingHotKey != null) tab.registerRecordingHotkey(settings);
+                    tab.recordHotkeySet.Content = settings.RecordingHotKey.ToString();
+                    viewModel.onSaveReplayTakeScreenshot = settings.alsoTakeScreenshot;
+                    viewModel.ScreenshotsPath = settings.ScreenshotSavePath;
+                    viewModel.ReplaysPath = settings.ReplaySavePath;
+                    viewModel.ReplayBufferSeconds = settings.BufferSeconds;
+                    viewModel.OBS_Key = settings.OBS_Hotkey;
+                    viewModel.AutoRecord = settings.AutoRecord;
+                    viewModel.AutoRecordDuplicates = settings.AutoRecordDuplicates;
+                    viewModel.ColorBenchmarkRanksAndScores = settings.ColorBenchmarkRanksAndScores;
+                    viewModel.LiveTrackerEnabled = settings.LiveTrackerEnabled;
+                    viewModel.LiveTrackerMinutes = settings.LiveTrackerMinutes;
+                    viewModel.BenchmarkSpreadSheetId = settings.BenchmarkSheetId;
+                    viewModel.ShowUserTaskDuration = settings.ShowUserTaskDuration;
+                    currentSettings = settings;
+
+                    if (settings.SteamLibraryPath != null && Directory.Exists(settings.SteamLibraryPath))
+                        viewModel.SteamLibraryPath = settings.SteamLibraryPath;
+
+                    if (settings.lastBenchmarkFile != null && File.Exists(settings.lastBenchmarkFile))
+                        (MainWindow.Instance.windowTabs[1] as BenchmarkTab).HandleFile(settings.lastBenchmarkFile);
+
+                    if (settings.lastCompetitionFile != null && File.Exists(settings.lastCompetitionFile))
+                        (MainWindow.Instance.windowTabs[1] as CompetitionTab).HandleFile(settings.lastCompetitionFile);
+                }
             }
-
-            var settings = XmlSerializer.deserializeXml<Settings>("./settings.xml");
-            if (settings != null)
-            {              
-                viewModel.klutchId = settings.klutchId;
-                if (settings.RecordingHotKey != null) MainWindow.Instance.registerRecordingHotkey(settings);
-                MainWindow.Instance.recordHotkeySet.Content = settings.RecordingHotKey.ToString();
-                viewModel.onSaveReplayTakeScreenshot = settings.alsoTakeScreenshot;
-                viewModel.ScreenshotsPath = settings.ScreenshotSavePath;
-                viewModel.ReplaysPath = settings.ReplaySavePath;
-                viewModel.ReplayBufferSeconds = settings.BufferSeconds;
-                viewModel.OBS_Key = settings.OBS_Hotkey;
-                viewModel.AutoRecord = settings.AutoRecord;
-                viewModel.AutoRecordDuplicates = settings.AutoRecordDuplicates;
-                viewModel.ColorBenchmarkRanksAndScores = settings.ColorBenchmarkRanksAndScores;
-                viewModel.LiveTrackerEnabled = settings.LiveTrackerEnabled;
-                viewModel.LiveTrackerMinutes = settings.LiveTrackerMinutes;
-                currentSettings = settings;
-
-                if (settings.SteamLibraryPath != null && Directory.Exists(settings.SteamLibraryPath)) viewModel.SteamLibraryPath = settings.SteamLibraryPath;
-                if (settings.lastBenchmarkFile != null && File.Exists(settings.lastBenchmarkFile)) MainWindow.Instance.HandleFile(settings.lastBenchmarkFile);
-                if (settings.lastCompetitionFile != null && File.Exists(settings.lastCompetitionFile)) MainWindow.Instance.HandleFile(settings.lastCompetitionFile);
+            catch (Exception ex)
+            {
+                MainWindow.Instance.showMessageBox(ex.Message);
             }
         }
+
         public static void SaveSettings()
         {
-            if (Directory.Exists(viewModel.SteamLibraryPath) || string.IsNullOrEmpty(viewModel.SteamLibraryPath)) currentSettings.SteamLibraryPath = viewModel.SteamLibraryPath;
-            if (File.Exists(viewModel.LastBenchmarkPath) || string.IsNullOrEmpty(viewModel.LastBenchmarkPath)) currentSettings.lastBenchmarkFile = viewModel.LastBenchmarkPath;
-            if (File.Exists(viewModel.LastCompetitionPath) || string.IsNullOrEmpty(viewModel.LastCompetitionPath)) currentSettings.lastCompetitionFile = viewModel.LastCompetitionPath;
+            try
+            {
+                if (currentSettings != null)
+                {
+                    if (Directory.Exists(viewModel.SteamLibraryPath) || string.IsNullOrEmpty(viewModel.SteamLibraryPath)) currentSettings.SteamLibraryPath = viewModel.SteamLibraryPath;
+                    if (File.Exists(viewModel.LastBenchmarkPath) || string.IsNullOrEmpty(viewModel.LastBenchmarkPath)) currentSettings.lastBenchmarkFile = viewModel.LastBenchmarkPath;
+                    if (File.Exists(viewModel.LastCompetitionPath) || string.IsNullOrEmpty(viewModel.LastCompetitionPath)) currentSettings.lastCompetitionFile = viewModel.LastCompetitionPath;
 
-            currentSettings.klutchId = viewModel.klutchId;
-            currentSettings.alsoTakeScreenshot = viewModel.onSaveReplayTakeScreenshot;
-            currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
-            currentSettings.ReplaySavePath = viewModel.ReplaysPath;
-            currentSettings.BufferSeconds = viewModel.ReplayBufferSeconds;
-            currentSettings.OBS_Hotkey = viewModel.OBS_Key;
-            currentSettings.AutoRecord = viewModel.AutoRecord;
-            currentSettings.AutoRecordDuplicates = viewModel.AutoRecordDuplicates;
-            currentSettings.ColorBenchmarkRanksAndScores = viewModel.ColorBenchmarkRanksAndScores;
-            currentSettings.LiveTrackerEnabled = viewModel.LiveTrackerEnabled;
-            currentSettings.LiveTrackerMinutes = viewModel.LiveTrackerMinutes;
+                    currentSettings.klutchId = viewModel.klutchId;
+                    currentSettings.alsoTakeScreenshot = viewModel.onSaveReplayTakeScreenshot;
+                    currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
+                    currentSettings.ReplaySavePath = viewModel.ReplaysPath;
+                    currentSettings.BufferSeconds = viewModel.ReplayBufferSeconds;
+                    currentSettings.OBS_Hotkey = viewModel.OBS_Key;
+                    currentSettings.AutoRecord = viewModel.AutoRecord;
+                    currentSettings.AutoRecordDuplicates = viewModel.AutoRecordDuplicates;
+                    currentSettings.ColorBenchmarkRanksAndScores = viewModel.ColorBenchmarkRanksAndScores;
+                    currentSettings.LiveTrackerEnabled = viewModel.LiveTrackerEnabled;
+                    currentSettings.LiveTrackerMinutes = viewModel.LiveTrackerMinutes;
+                    currentSettings.BenchmarkSheetId = viewModel.BenchmarkSpreadSheetId;
+                    currentSettings.ShowUserTaskDuration = viewModel.ShowUserTaskDuration;
 
-            XmlSerializer.serializeToXml<Settings>(currentSettings, settingsPath);
+                    XmlSerializer.serializeToXml<Settings>(currentSettings, settingsPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                MainWindow.Instance.showMessageBox(ex.Message);
+            }
         }        
     }
 }

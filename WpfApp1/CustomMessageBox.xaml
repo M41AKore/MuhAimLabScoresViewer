@@ -18,7 +18,7 @@
             <RowDefinition Height="40"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Name="output" Grid.Column="0" Grid.Row="1" Height="auto"            
+        <TextBlock Name="TxtOutput" Grid.Column="0" Grid.Row="1" Height="auto"            
                    HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center"></TextBlock>
         <Button Name="btn_right" Click="btn_right_Click" Grid.Column="0" Grid.Row="3" HorizontalAlignment="Right" Width="30" Height="20" Margin="10">OK</Button>
     </Grid>

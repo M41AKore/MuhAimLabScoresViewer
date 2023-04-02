@@ -7,7 +7,9 @@ using System.Windows;
 using System.Xml;
 using System.Xml.Serialization;
 using static MuhAimLabScoresViewer.MainWindow;
+using static MuhAimLabScoresViewer.CompetitionTab;
 using static MuhAimLabScoresViewer.Helper;
+using System.Diagnostics;
 
 namespace MuhAimLabScoresViewer
 {
@@ -24,7 +26,6 @@ namespace MuhAimLabScoresViewer
         [XmlIgnore]
         public List<CompetitionContender> competitionContenders { get; set; }
 
-
         public static void buildCompContenders()
         {
             try
@@ -33,45 +34,33 @@ namespace MuhAimLabScoresViewer
 
                 for (int i = 0; i < currentComp.Parts.Length; i++)
                     for (int j = 0; j < currentComp.Parts[i].Scenarios.Length; j++)
-                        foreach (var player in currentComp.Parts[i].Scenarios[j].leaderboard.ResultsItem.results)
+                        foreach (var player in currentComp.Parts[i].Scenarios[j].leaderboard.Leaderboard.data)
                         {
-                            var playdate = UnixTimeStampToDateTime(double.Parse(player.endedAt.Substring(0, player.endedAt.Length - 3)));
-
-                            // limit eligible scores to within time frame
-                            //var playdate = DateTime.UnixEpoch.AddSeconds(long.Parse(player.endedAt.Substring(0, player.endedAt.Length - 3)));
-
-                            /*if (player.klutchId == "A1C827457D314A65") //player.klutchId == "31A5D3DD1FF64BC9"
-                            {
-                                Logger.log($"for {currentComp.Parts[i].Scenarios[j].Name} and play of score '{player.score}'");
-                                Logger.log("adjusting timestamp of '" + playdate.ToString() + "' to '" + (playdate.Hour >= 12 ? playdate.AddHours(12).ToString() : playdate.ToString()) + "'");
-                            }*/
-
-                            //if(playdate.Hour >= 12) playdate = playdate.AddHours(12); 
-
+                            var playdate = DateTime.Parse(player.ended_at);
                             var compPartEnddate = DateTime.Parse(currentComp.Parts[i].Enddate);
                             var compStartDate = DateTime.Parse(currentComp.Parts[i].Startdate);
 
                             //if (playdate < compStartDate || playdate > compPartEnddate) continue;
                             if (playdate < compStartDate.AddHours(-12) || playdate > compPartEnddate.AddHours(12)) continue; // <--- CURRENT TIMEFRAME LIMITATIONS
 
-                            var existingPlayer = currentComp.competitionContenders.FirstOrDefault(c => c.klutchId == player.klutchId);
+                            var existingPlayer = currentComp.competitionContenders.FirstOrDefault(c => c.klutchId == player.user_id);
                             if (existingPlayer == null) //create new
                             {
                                 existingPlayer = new CompetitionContender()
                                 {
                                     Name = player.username,
-                                    klutchId = player.klutchId,
-                                    mostRecentTimestamp = long.Parse(player.endedAt), //1 649 388 232 000
+                                    klutchId = player.user_id,
+                                    mostRecentTimestamp = playdate, //now is datetime in string format //1 649 388 232 000 <- REST
                                 };
                                 currentComp.competitionContenders.Add(existingPlayer);
                             }
 
                             //try to use newest name
                             if (existingPlayer.Name != player.username)
-                                if (long.TryParse(player.endedAt, out long playTimestamp) && playTimestamp > existingPlayer.mostRecentTimestamp)
+                                if (playdate > existingPlayer.mostRecentTimestamp)
                                 {
                                     existingPlayer.Name = player.username;
-                                    existingPlayer.mostRecentTimestamp = playTimestamp;
+                                    existingPlayer.mostRecentTimestamp = playdate;
                                 }
 
                             if (existingPlayer.partResults == null)
