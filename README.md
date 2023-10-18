@@ -8,7 +8,7 @@ see https://github.com/M41AKore/MuhAimLabScoresViewer/releases for downloads
 As my anti-virus program (Defender) registered releases of this app as viruses, I have to assume yours will react the same.
 And, of course, the zip does not contain any malicious code.
 It'll be necessary for you to temporarily disable the real time protection to download and extract the files.
-I'm sorry for this inconvenience but I don't think I can do anything against this at this time.
+I'm sorry for this inconvenience but I don't think I can do anything against it at this time.
 
 
 # Setup
