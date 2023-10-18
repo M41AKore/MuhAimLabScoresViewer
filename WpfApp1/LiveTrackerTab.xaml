@@ -49,7 +49,7 @@
                             <TextBlock Grid.Column="1" Grid.Row="3" VerticalAlignment="Center" Name="txt_TrackerMedian"></TextBlock>
                         </Grid>
                     </Border>
-                    <Button Margin="0,10,0,10" Click="Button_Click_6">Compare to Historic Data</Button>
+                    <Button Margin="0,10,0,10" Click="clickCompreToHistoryData">Compare to Historic Data</Button>
                     <StackPanel Name="historicComparisonStacky"></StackPanel>
                 </StackPanel>
             </DockPanel>

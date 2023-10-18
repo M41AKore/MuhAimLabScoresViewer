@@ -18,6 +18,10 @@ using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Wpf;
 using static MuhAimLabScoresViewer.APIStuff;
+using static MuhAimLabScoresViewer.SheetsInteraction;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using Task = System.Threading.Tasks.Task;
 
 namespace MuhAimLabScoresViewer
 {
@@ -39,17 +43,40 @@ namespace MuhAimLabScoresViewer
 
         public static ScenarioHistory currentScenario;
 
+        static bool done = false;
+
+        private static async Task hotkeyCooldown()
+        {
+            await Task.Delay(2000);
+            done = false;
+        }
+
+        public static void testOBSHotkey()
+        {
+            doHighscoreRecordingStuff(1337, true);
+        }
+
         public static void simulateKeyPress(string hotkey)
         {
+            if (!done)
+            {
+                done = true;
+                hotkeyCooldown();
+            }
+            else return;
+
             if (string.IsNullOrEmpty(hotkey)) return;
 
+            Trace.WriteLine("simulateKeyPress()");
 
-            keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0x45, 0, (uint)IntPtr.Zero);
-            keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0, 0, 0);
+            //keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0x45, 0, (uint)IntPtr.Zero);
+            //keybd_event((uint)VirtualKeysDictionary.getVirtualKey(hotkey), 0, 0, 0);
 
             Process[] processes = Process.GetProcessesByName("obs64"); //does this get streamlabs? is obs studio a different thing?
             if (processes.Length > 0)
             {
+                Trace.WriteLine("found obs64 !");
+
                 foreach (Process proc in processes)
                     PostMessage(proc.MainWindowHandle, WM_SYSKEYDOWN, VirtualKeysDictionary.getVirtualKey(hotkey), 0);
             }
@@ -77,10 +104,15 @@ namespace MuhAimLabScoresViewer
             {
                 Logger.log("reading db file...");
                 sqlite = new SQLiteConnection($"Data Source={LocalDBFile}"); //;New=False;
-                                                                                                                                                      
+
                 detectNewHighscore(); //for autorecord
 
-                if(viewModel.LiveTrackerEnabled) createLiveTrackerGUI();
+                if (viewModel.LiveTrackerEnabled)
+                {
+                    createLiveTrackerGUI();
+                    generateResultView(MainWindow.Instance.windowTabs[5] as LiveResultTab);
+                }
+
 
                 return true;
 
@@ -93,21 +125,143 @@ namespace MuhAimLabScoresViewer
             return false;
         }
 
+        public static async void generateResultView(LiveResultTab tab)
+        {
+            sqlite = new SQLiteConnection($"Data Source={LocalDBFile}"); //;New=False;
+
+            var results = selectQuery($"SELECT * FROM TaskData ORDER BY createDate DESC");
+            var rows = results.Select();
+
+            var last = rows.FirstOrDefault();
+            if (last != null)
+            {
+                string taskName = last["taskName"].ToString();
+                string workshopid = last["workshopId"].ToString();
+                string score = last["score"].ToString();
+                DateTime timestamp = DateTime.Parse(last["createDate"].ToString());
+
+                string performance = last["performance"].ToString();
+                int accIndex = performance.IndexOf("accTotal");
+                var parts = performance.Substring(accIndex, performance.Length - accIndex).Split('"');
+                string accuracy = parts[1].Replace(':', ' ').Replace(',', ' ').Trim() + "%";
+
+
+                if (!string.IsNullOrEmpty(viewModel.klutchId))
+                {
+                    var r = await runGetTaskResultsQuery(viewModel.klutchId);
+                    if(r != null) 
+                    {
+                        
+                    }
+                }
+                else MainWindow.Instance.showMessageBox("please set 'klutchId' in Settings!");
+
+
+                ;
+                MainWindow.Instance.Dispatcher.Invoke(() =>
+                {
+                    if (tab != null)
+                    {
+                        tab.ResultGraphTitle.Content = taskName;
+                        tab.Result_Score.Text = score;
+                        tab.Result_Accuracy.Text = accuracy;
+
+                        tab.resultgraphStacky.Children.Clear();
+
+                        /**scenario.Plays = scenario.Plays.OrderBy(p => p.Date).ToList(); //left to right graph
+
+                        //scores plot
+                        FunctionSeries fs = new FunctionSeries();
+                        for (int i = 0; i < scenario.Plays.Count; i++)
+                            fs.Points.Add(new OxyPlot.DataPoint(i + 1, int.Parse(scenario.Plays[i].Score)));
+
+
+                        //median plot
+                        FunctionSeries fs2 = new FunctionSeries();
+                        fs2.Color = OxyColor.FromArgb(255, 255, 0, 0);
+
+                        //caluclate medians
+                        var medians = new List<double>();
+                        for (int i = 0; i < scenario.Plays.Count; i++)
+                        {
+                            var group = scenario.Plays.Take(i + 1).OrderBy(p => int.Parse(p.Score)).ToArray();
+                            if ((i + 1) % 2 == 0) //if even, calculate median at half
+                            {
+                                int halfPlusOne = (i + 1) / 2;
+                                int halfMinusOne = halfPlusOne - 1;
+                                medians.Add((int.Parse(group[halfPlusOne].Score) + int.Parse(group[halfMinusOne].Score)) / 2);
+                            }
+                            else medians.Add(double.Parse(group[(i + 1) / 2].Score));
+                        }
+
+                        for (int i = 0; i < medians.Count; i++)
+                            fs2.Points.Add(new OxyPlot.DataPoint(i + 1, medians[i]));
+
+                        PlotView pv = new PlotView();
+                        pv.Height = 600;
+                        pv.Width = 600;
+                        PlotModel n = new PlotModel();
+                        n.Series.Add(fs);
+                        n.Series.Add(fs2);
+                        n.Axes.Add(new LinearAxis()
+                        {
+                            Position = AxisPosition.Bottom,
+                            Title = "Plays",
+                            MajorGridlineStyle = OxyPlot.LineStyle.Solid,
+                            MinorGridlineStyle = OxyPlot.LineStyle.None,
+                        });
+                        n.Axes.Add(new LinearAxis());
+                        pv.Model = n;
+
+                        var tab = MainWindow.Instance.windowTabs[4] as LiveTrackerTab;
+                        if (tab == null) return;
+
+                        if (tab.trackergraphStacky.Children.Count > 0) tab.trackergraphStacky.Children.RemoveAt(0);
+                        tab.trackergraphStacky.Children.Add(pv);
+
+                        //other info section
+                        var orderedPlays = scenario.Plays.OrderBy(p => int.Parse(p.Score)).ToArray();
+                        tab.txt_TrackerPlays.Text = scenario.Plays.Count.ToString();
+                        tab.txt_TrackerHighscore.Text = orderedPlays.Last().Score.ToString();
+                        tab.txt_TrackerAverage.Text = scenario.Plays.Average(p => int.Parse(p.Score)).ToString("#.##");
+
+                        //median
+                        if (scenario.Plays.Count % 2 == 0) //if even, calculate median at half
+                        {
+                            int halfPlusOne = int.Parse(orderedPlays[scenario.Plays.Count / 2].Score);
+                            int halfMinusOne = int.Parse(orderedPlays[(scenario.Plays.Count / 2) - 1].Score);
+                            double median = ((double)(halfPlusOne + halfMinusOne) / 2);
+                            tab.txt_TrackerMedian.Text = median.ToString();
+                        }
+                        else
+                        {
+                            tab.txt_TrackerMedian.Text = orderedPlays[scenario.Plays.Count / 2].Score.ToString();
+                        }*/
+
+                    }
+                });
+            }
+        }
+
         public static ScenarioHistory determineCurrentScenario()
         {
             ScenarioHistory current = null;
             sqlite = new SQLiteConnection($"Data Source={LocalDBFile}"); //;New=False;
 
+
+            // TODO: change the session length behaviour to "max pause", "min time between session" or "session cutoff"
+            // where then if the time between two results of the same taskid is greater than that time, see as separate sessions
+
             var dateString = DateTime.Now.AddMinutes(-viewModel.LiveTrackerMinutes).ToString("yyyy-MM-dd HH:mm:ss");
             var results = selectQuery($"SELECT * FROM TaskData WHERE createDate >= '{dateString}' ORDER BY createDate DESC");
             var rows = results.Select();
-        
+
             //this is done in select statement now
             //var compareSpan = TimeSpan.FromMinutes(MainWindow.viewModel.LiveTrackerMinutes);
             //var relevant = rows.Where(r => DateTime.TryParse(r["createDate"].ToString(), out DateTime date) && DateTime.UtcNow - date < compareSpan).ToList();
             //var orderedRelevant = relevant.OrderByDescending(r => DateTime.Parse(r["createDate"].ToString())).ToList();
 
-            var last = rows.FirstOrDefault();        
+            var last = rows.FirstOrDefault();
             if (last != null)
             {
                 current = new ScenarioHistory()
@@ -121,13 +275,13 @@ namespace MuhAimLabScoresViewer
                             Date = DateTime.Parse(last["createDate"].ToString()),
                             Score = last["score"].ToString(),
                             //Accuracy = last["accuracy"].ToString(), // would have to parse ["performance"] for 
-                        } 
-                    },
+                        }
+                },
                 };
 
                 for (int i = 0; i < rows.Length; i++)
                 {
-                    if(rows[i] == last) continue;
+                    if (rows[i] == last) continue;
 
                     if (rows[i]["taskName"].ToString() == last["taskName"].ToString())
                     {
@@ -143,28 +297,29 @@ namespace MuhAimLabScoresViewer
                     {
                         break;
                     }
-                }            
+                }
             }
 
             return current;
         }
 
         public static void createLiveTrackerGUI()
-        {           
+        {
             currentScenario = determineCurrentScenario();
-            if(currentScenario != null) currentScenario.Name = getTaskNameFromLevelID(currentScenario.Identification, string.IsNullOrEmpty(currentScenario.WorkshopId) ? null : currentScenario.WorkshopId);
+            if (currentScenario != null && !string.IsNullOrEmpty(currentScenario.Identification) && !string.IsNullOrEmpty(currentScenario.WorkshopId)) 
+                currentScenario.Name = getTaskNameFromLevelID(currentScenario.Identification, currentScenario.WorkshopId);
 
             MainWindow.Instance.Dispatcher.Invoke(() =>
-            {
-                var tab = MainWindow.Instance.windowTabs[4] as LiveTrackerTab;
-                if (currentScenario == null) tab.TrackerGraphTitle.Content = "No plays found yet in given Session window!";
-                else
                 {
-                    tab.TrackerGraphTitle.Content = !string.IsNullOrEmpty(currentScenario.Name) ? currentScenario.Name : currentScenario.Identification;
-                    tab.trackergraphStacky.Children.Clear();
-                    createDataPoints(currentScenario);
-                }
-            });   
+                    var tab = MainWindow.Instance.windowTabs[4] as LiveTrackerTab;
+                    if (currentScenario == null) tab.TrackerGraphTitle.Content = "No plays found yet in given Session window!";
+                    else
+                    {
+                        tab.TrackerGraphTitle.Content = !string.IsNullOrEmpty(currentScenario.Name) ? currentScenario.Name : currentScenario.Identification;
+                        tab.trackergraphStacky.Children.Clear();
+                        createDataPoints(currentScenario);
+                    }
+                });
         }
 
         private static void createDataPoints(ScenarioHistory scenario)
@@ -215,7 +370,7 @@ namespace MuhAimLabScoresViewer
             pv.Model = n;
 
             var tab = MainWindow.Instance.windowTabs[4] as LiveTrackerTab;
-            if(tab == null) return;
+            if (tab == null) return;
 
             if (tab.trackergraphStacky.Children.Count > 0) tab.trackergraphStacky.Children.RemoveAt(0);
             tab.trackergraphStacky.Children.Add(pv);
@@ -278,8 +433,8 @@ namespace MuhAimLabScoresViewer
                     if (performanceJson != null)
                     {
                         if (performanceJson.hitsTotal != playerResult.shots_hit
-                            //|| performanceJson.missesTotal != playerResult.shots_missed
-                            || performanceJson.targetsTotal != playerResult.targets)
+                                //|| performanceJson.missesTotal != playerResult.shots_missed
+                                || performanceJson.targetsTotal != playerResult.targets)
                         {
                             //if any of these values is different, this is most likely a new result
                             //potentially still record duplicate score attempts
@@ -302,11 +457,63 @@ namespace MuhAimLabScoresViewer
             }
         }
 
-        private static void doHighscoreRecordingStuff(int score)
+        private static async Task doHighscoreRecordingStuff(int score, bool test = false)
         {
             MainWindow.Instance.displayAutoRecordStatusMessage($"New highscore of '{score}' detected!");
-            if (viewModel.onSaveReplayTakeScreenshot) (MainWindow.Instance.windowTabs[5] as SettingsTab).takeScreenshot();
+            if (viewModel.onSaveReplayTakeScreenshot)
+            {
+                var tab = MainWindow.Instance.windowTabs[6] as SettingsTab;
+                if (tab != null) tab.takeScreenshot();
+            }
             simulateKeyPress(viewModel.OBS_Key);
+
+            int delaySeconds = viewModel.VODrenameDelay > 3 ? viewModel.VODrenameDelay : 3;
+            await Task.Delay(delaySeconds * 1000); //min 3s
+
+            if (!string.IsNullOrEmpty(viewModel.OBSoutputDirectory)) // !string.IsNullOrEmpty(viewModel.HighscoreVODname) && 
+            {
+                var vodDir = new DirectoryInfo(viewModel.OBSoutputDirectory);
+                if (vodDir.Exists)
+                {
+                    Trace.WriteLine("directory exists");
+
+                    var files = vodDir.GetFiles();
+                    var bynewest = files.OrderByDescending(f => f.LastWriteTime);
+
+                    var newest = bynewest.FirstOrDefault(f => f.Extension == ".mp4" || f.Extension == ".mkv");
+                    if (newest != null)
+                    {
+                        Trace.WriteLine("most recent video file is " + newest.Name);
+                        //System.IO.File.Move(newest.FullName, newest.FullName);
+
+                        if (!test && newest.LastWriteTime < DateTime.Now - TimeSpan.FromSeconds(delaySeconds + 1)) //max 1s before save recording was initiated
+                        {
+                            Logger.log($"Most recent video file '{newest.Name}' was found to be created before this vod saving was initiated!");
+                            return;
+                        }
+
+                        var lastResult = selectQuery("SELECT * FROM TaskData ORDER BY createDate DESC LIMIT 1"); // );
+                        var rows = lastResult.Select();
+
+                        Trace.WriteLine("lastresult is " + rows[0]["taskName"] + ", " + rows[0]["score"]);
+                        
+                        if(test || score == int.Parse(rows[0]["score"].ToString()))
+                        {
+                            var taskname = Helper.getTaskNameFromLevelID(rows[0]["taskName"].ToString(), rows[0]["workshopId"].ToString());
+
+                            string newName = $"{taskname} {rows[0]["score"]}{newest.Extension}";
+                            Trace.WriteLine($"renaming {newest.Name} to {newName}");
+                            newest.MoveTo(newest.Directory.FullName + "\\" + newName);
+
+                            if(File.Exists(newest.Directory.FullName + "\\" + newName))
+                            {
+                                MainWindow.Instance.displayAutoRecordStatusMessage($"Renamed VOD to '{newName}'!");
+                            }
+                            
+                        }
+                    }
+                }
+            }
         }
 
         private bool checkDBfile()
@@ -373,13 +580,13 @@ namespace MuhAimLabScoresViewer
                 watcher = new FileSystemWatcher(LocalDBFile.Replace("klutch.bytes", string.Empty));
 
                 watcher.NotifyFilter = NotifyFilters.Attributes
-                                     | NotifyFilters.CreationTime
-                                     | NotifyFilters.DirectoryName
-                                     | NotifyFilters.FileName
-                                     | NotifyFilters.LastAccess
-                                     | NotifyFilters.LastWrite
-                                     | NotifyFilters.Security
-                                     | NotifyFilters.Size;
+                                         | NotifyFilters.CreationTime
+                                         | NotifyFilters.DirectoryName
+                                         | NotifyFilters.FileName
+                                         | NotifyFilters.LastAccess
+                                         | NotifyFilters.LastWrite
+                                         | NotifyFilters.Security
+                                         | NotifyFilters.Size;
 
                 watcher.Changed += OnChanged;
                 watcher.Created += OnCreated;
@@ -418,13 +625,13 @@ namespace MuhAimLabScoresViewer
         {
             if (e.ChangeType != WatcherChangeTypes.Changed) return;
 
-            var t = Task.Run(() =>
-            {
-                while (!readKlutchBytes())
+            var t = System.Threading.Tasks.Task.Run(() =>
                 {
-                    Thread.Sleep(1000);
-                }
-            });
+                    while (!readKlutchBytes())
+                    {
+                        Thread.Sleep(1000);
+                    }
+                });
         }
         private static void OnCreated(object sender, FileSystemEventArgs e)
         {
@@ -432,7 +639,7 @@ namespace MuhAimLabScoresViewer
             Console.WriteLine(value);
         }
         private static void OnDeleted(object sender, FileSystemEventArgs e) =>
-            Console.WriteLine($"Deleted: {e.FullPath}");
+                Console.WriteLine($"Deleted: {e.FullPath}");
         private static void OnRenamed(object sender, RenamedEventArgs e)
         {
             Console.WriteLine($"Renamed:");

@@ -4,14 +4,19 @@ using OxyPlot.Axes;
 using OxyPlot.Series;
 using OxyPlot.Wpf;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SQLite;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Shapes;
+using static MuhAimLabScoresViewer.APIStuff.AGGProfileResult.AimLab.PlayAGG.Aggregate;
 using static MuhAimLabScoresViewer.Helper;
 using static MuhAimLabScoresViewer.ObjectsAndStructs;
 
@@ -278,26 +283,66 @@ namespace MuhAimLabScoresViewer
                     var existing = Scenarios.FirstOrDefault(s => s.Identification == taskname);
                     if (existing == null)
                     {
+                        string scenName = null;
+                        try
+                        {
+                            scenName = getTaskNameFromLevelID(taskname, row["workshopId"].ToString());
+                            
+                        }
+                        catch(Exception ex)
+                        {
+                            Trace.WriteLine(ex.Message);
+                        }
+
                         existing = new ScenarioHistory()
                         {
                             Identification = taskname,
-                            Name = getTaskNameFromLevelID(taskname, row["workshopId"].ToString()),
+                            Name = scenName,
                             Plays = new List<Play>(),
                         };
                         if (string.IsNullOrEmpty(existing.Name)) existing.Name = existing.Identification;
                         Scenarios.Add(existing);
+
+                        Trace.WriteLine("added " + scenName);
                     }
 
                     string? createDate = row["createDate"].ToString();
 
                     var perfString = row["performance"].ToString();
-
                     var parts = perfString.Replace('\\', ' ').Split(',');
 
-                    string? acc = parts.FirstOrDefault(p => p.Contains("accTotal"))?.Split(':')[1];
-                    string? kills = parts.FirstOrDefault(p => p.Contains("killTotal"))?.Split(':')[1].Replace('}', ' ').Trim();
-                    string? shots = parts.FirstOrDefault(p => p.Contains("shotsTotal"))?.Split(':')[1];
-                    string? targets = parts.FirstOrDefault(p => p.Contains("targetsTotal"))?.Split(':')[1];
+                    string? acc = null;
+                    var value = parts.FirstOrDefault(p => p.Contains("accTotal"));
+                    if(value != null)
+                    {
+                        var p = value.Split(':');
+                        if(p != null && p.Any()) acc = p[1];
+                    }
+
+                    string? kills = null;
+                    /*value = parts.FirstOrDefault(p => p.Contains("killTotal"));
+                    if (value != null)
+                    {
+                        var p = value.Split(':');
+                        if (p != null && p.Any()) kills = p[1].Replace('}', ' ').Trim();
+                    }*/
+
+                    string? shots = null;
+                    /*value = parts.FirstOrDefault(p => p.Contains("shotsTotal"));
+                    if (value != null)
+                    {
+                        var p = value.Split(':');
+                        if (p != null && p.Any()) shots = p[1];
+                    }*/
+
+                    string? targets = null;
+                    /*value = parts.FirstOrDefault(p => p.Contains("targetsTotal"));
+                    if (value != null)
+                    {
+                        var p = value.Split(':');
+                        if (p != null && p.Any()) targets = p[1];
+                    }*/
+
                     string hits = shots != null && acc != null ? ((int)(int.Parse(shots) * (float.Parse(acc) * 0.01f))).ToString() : "0";
 
                     existing.Plays.Add(new Play()
@@ -322,6 +367,132 @@ namespace MuhAimLabScoresViewer
             {
                 Logger.log("exception thrown when trying to read database file!" + Environment.NewLine + ex.Message);
             }
+        }
+        public static async Task<List<ScenarioHistory>> pullDataFromLocalDB2()
+        {
+            try
+            {
+                Logger.log("reading db file...");
+                if (LiveTracker.sqlite == null) LiveTracker.sqlite = new SQLiteConnection($"Data Source={LiveTracker.LocalDBFile}"); //;New=False;
+
+                var results = LiveTracker.selectQuery("SELECT * FROM TaskData ORDER BY taskName DESC");
+                var rows = results.Select();
+
+                var scenarios = new ConcurrentBag<ScenarioHistory>();
+                Console.WriteLine($"found {rows.Length} local db entries!");
+
+                var scenarioGroups = rows.GroupBy(r => r["taskName"].ToString());
+                Console.WriteLine($"found {scenarioGroups.Count()} scenario groups!");
+
+                var timestamp = DateTime.Now;
+                var lookUp = await getTaskNamesFromLevelIDs();
+                Console.WriteLine("getting tasklevels and ids took " + (DateTime.Now - timestamp).TotalMilliseconds + "ms!");
+
+                await Task.Run(() => Parallel.ForEach(scenarioGroups, group =>
+                {
+                    lookUp.TryGetValue(group.Key, out string taskName);
+                    var baseEntry = new ScenarioHistory()
+                    {
+                        Identification = group.Key,
+                        Name = taskName,
+                        Plays = new List<Play>(),
+                    };
+                    if (string.IsNullOrEmpty(baseEntry.Name)) baseEntry.Name = baseEntry.Identification;
+                    scenarios.Add(baseEntry);
+
+                    foreach (var row in group)
+                    {
+                        string? createDate = row["createDate"].ToString();
+
+                        var perfString = row["performance"].ToString();
+                        var parts = perfString.Replace('\\', ' ').Split(',');
+
+                        string? acc = null;
+                        var value = parts.FirstOrDefault(p => p.Contains("accTotal"));
+                        if (value != null)
+                        {
+                            var p = value.Split(':');
+                            if (p != null && p.Length > 1) acc = p[1];
+                        }
+
+                        string? kills = null;
+                        value = parts.FirstOrDefault(p => p.Contains("killTotal"));
+                        if (value != null)
+                        {
+                            var p = value.Split(':');
+                            if (p != null && p.Length > 1) kills = p[1].Replace('}', ' ').Trim();
+                        }
+
+                        string? shots = null;
+                        value = parts.FirstOrDefault(p => p.Contains("shotsTotal"));
+                        if (value != null)
+                        {
+                            var p = value.Split(':');
+                            if (p != null && p.Length > 1) shots = p[1];
+                        }
+
+                        string? targets = null;
+                        value = parts.FirstOrDefault(p => p.Contains("targetsTotal"));
+                        if (value != null)
+                        {
+                            var p = value.Split(':');
+                            if (p != null && p.Length > 1) targets = p[1];
+                        }
+
+                        string hits = shots != null && acc != null ? ((int)(int.Parse(shots) * (float.Parse(acc) * 0.01f))).ToString() : "0";
+
+                        baseEntry.Plays.Add(new Play()
+                        {
+                            DateString = createDate,
+                            Date = createDate == null ? DateTime.MinValue : DateTime.Parse(createDate),
+                            Score = row["score"].ToString(),
+                            Accuracy = acc ?? "0",
+                        });
+                    }
+                }));
+
+                Console.WriteLine("grouping and creating base items took " + (DateTime.Now - timestamp).TotalMilliseconds + "ms!");
+                var e = scenarios.ToList();
+                e.ForEach(s => s.Plays = s.Plays.OrderBy(p => p.Date).ToList()); //make sure they're in timely order
+
+                Scenarios = e;
+                createScenariosGUI(MainWindow.viewModel.SortType.Name, MainWindow.viewModel.SortDirection.Name);
+                return e;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("exception thrown when trying to read database file!" + Environment.NewLine + ex.Message);
+                return null;
+            }
+            return null;
+        }
+
+        public static async Task<Dictionary<string, string>>? getTaskNamesFromLevelIDs()
+        {
+            if (!Directory.Exists(SettingsTab.currentSettings.SteamLibraryPath)) return null;
+
+            var dictionary = new Dictionary<string, string>();
+
+            foreach (var dir in new DirectoryInfo(SettingsTab.currentSettings.SteamLibraryPath + @"\steamapps\workshop\content\714010").GetDirectories())
+            {
+                foreach (var subdir in dir.GetDirectories())
+                    if (subdir.Name == "Levels")
+                        foreach (var file in subdir.GetDirectories()[0].GetFiles())
+                            if (file.Name == "level.es3")
+                            {
+                                var content = File.ReadAllText(file.FullName);
+                                string foundLevelId = getLevelIDFromES3(content);
+                                string taskName = getTaskNameFromES3(content);
+
+                                if (!dictionary.ContainsKey(foundLevelId) && !dictionary.ContainsValue(taskName))
+                                {
+                                    dictionary.Add(foundLevelId, taskName);
+                                }
+
+                            }
+            }
+
+            return dictionary;
         }
     }  
 }

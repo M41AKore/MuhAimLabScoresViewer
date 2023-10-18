@@ -49,6 +49,9 @@ namespace MuhAimLabScoresViewer
         private List<string> _GraphPlayDisplayCounts;
         private string _GraphPlayDisplayCount;
         private bool _showTaskDuration;
+        private string _HighscoreVODname;
+        private string _OBSoutputDirectory;
+        private int _VODrenameDelay;
 
         public string SteamLibraryPath
         {
@@ -75,7 +78,7 @@ namespace MuhAimLabScoresViewer
                 _borderVisible = value;
                 NotifyPropertyChanged("BorderVisible");
             }
-        }      
+        }
         public bool IsRecording
         {
             get => _IsRecording;
@@ -142,7 +145,7 @@ namespace MuhAimLabScoresViewer
         }
         public string LastCompetitionPath
         {
-            get => _LastCompetitionPath; 
+            get => _LastCompetitionPath;
             set
             {
                 _LastCompetitionPath = value;
@@ -166,13 +169,13 @@ namespace MuhAimLabScoresViewer
                 if (_AutoRecord != value)
                 {
                     if (!_AutoRecord && value) LiveTracker.setupFileWatch();
-                    else if(_AutoRecord && !value) LiveTracker.removeFileWatch();
+                    else if (_AutoRecord && !value) LiveTracker.removeFileWatch();
                 }
                 _AutoRecord = value;
                 NotifyPropertyChanged("AutoRecord");
             }
         }
-        public  bool AutoRecordDuplicates
+        public bool AutoRecordDuplicates
         {
             get => _AutoRecordDuplicates;
             set
@@ -225,13 +228,13 @@ namespace MuhAimLabScoresViewer
                 _SortDirections = value;
                 NotifyPropertyChanged("SortDirections");
             }
-        }       
+        }
         public ScenarioSortingType SortType
         {
             get => _SortType;
             set
             {
-                if(_SortType != value && _SortType != null && SortDirection != null && AimLabHistoryViewer.Scenarios != null)
+                if (_SortType != value && _SortType != null && SortDirection != null && AimLabHistoryViewer.Scenarios != null)
                 {
                     AimLabHistoryViewer.createScenariosGUI(value.Name, SortDirection.Name);
                 }
@@ -281,7 +284,7 @@ namespace MuhAimLabScoresViewer
         public List<string> GraphPlayDisplayCounts
         {
             get => _GraphPlayDisplayCounts;
-            set { 
+            set {
                 _GraphPlayDisplayCounts = value;
                 NotifyPropertyChanged("GraphPlayDisplayCounts");
             }
@@ -291,7 +294,7 @@ namespace MuhAimLabScoresViewer
             get => _GraphPlayDisplayCount;
             set
             {
-                if(_GraphPlayDisplayCount != value && _GraphPlayDisplayCount != null)
+                if (_GraphPlayDisplayCount != value && _GraphPlayDisplayCount != null)
                 {
                     AimLabHistoryViewer.createDataPoints(AimLabHistoryViewer.currentScenario, value);
                 }
@@ -308,6 +311,35 @@ namespace MuhAimLabScoresViewer
                 NotifyPropertyChanged("ShowUserTaskDuration");
             }
         }
+        public string HighscoreVODname
+        {
+            get => _HighscoreVODname;
+            set
+            {
+                _HighscoreVODname = value;
+                NotifyPropertyChanged("HighscoreVODname");
+            }
+        }
+        public string OBSoutputDirectory
+        {
+            get => _OBSoutputDirectory;
+            set
+            {
+                _OBSoutputDirectory = value;
+                NotifyPropertyChanged("OBSoutputDirectory");
+            }
+        }
+        public int VODrenameDelay
+        {
+            get => _VODrenameDelay;
+            set
+            {
+                _VODrenameDelay = value;
+                NotifyPropertyChanged("VODrenameDelay");
+            }
+        }
+
+
 
         private void NotifyPropertyChanged(string info)
         {

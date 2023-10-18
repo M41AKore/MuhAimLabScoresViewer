@@ -46,7 +46,7 @@
                 <Label Grid.Row="5" Grid.Column="0" VerticalAlignment="Center">Live Tracker:</Label>
                 <CheckBox Grid.Row="5" Grid.Column="1" IsChecked="{Binding Path=LiveTrackerEnabled}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
-                <Label Grid.Row="6" Grid.Column="0" VerticalAlignment="Center">Max Session Length:</Label>
+                <Label Grid.Row="6" Grid.Column="0" VerticalAlignment="Center">Max Session Minutes:</Label>
                 <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Path=LiveTrackerMinutes}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
 
                 <Label Grid.Row="7" Grid.Column="0" VerticalAlignment="Center">Benchmark Spreadsheet Id:</Label>
@@ -106,6 +106,8 @@
                         <RowDefinition/>
                         <RowDefinition/>
                         <RowDefinition/>
+                        <RowDefinition/>
+                        <RowDefinition/>
                     </Grid.RowDefinitions>
 
                     <Label Grid.Row="0" Grid.Column="0" VerticalAlignment="Center">Auto-Record Highscores:</Label>
@@ -119,7 +121,7 @@
                                    ToolTip="The keypress to simulate to trigger OBS to save the replay buffer.&#x0a;Must match this key in OBS settings!">OBS Recording Hotkey:</Label>
                     <DockPanel Grid.Row="2" Grid.Column="1">
                         <TextBox Text="{Binding Path=OBS_Key}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
-                        <Button Margin="5,0,0,0" Height="20" Click="Button_Click_3" HorizontalAlignment="Left" VerticalAlignment="Center" Width="40">Test</Button>
+                        <Button Margin="5,0,0,0" Height="20" Click="clickTestOBSHotkey" HorizontalAlignment="Left" VerticalAlignment="Center" Width="40">Test</Button>
                     </DockPanel>
 
                     <!--<Label Grid.Row="2" Grid.Column="0" VerticalAlignment="Center">Replays Path:</Label>
@@ -130,6 +132,15 @@
 
                     <Label Grid.Row="4" Grid.Column="0" VerticalAlignment="Center" ToolTip="If not set, screenshots will be saved in app directory.">Screenshots Path:</Label>
                     <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding Path=ScreenshotsPath}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                    <!--<Label Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" ToolTip="How to name the auto recorded file.">Highscore VOD name:</Label>
+                    <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Path=HighscoreVODname}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>-->
+
+                    <Label Grid.Row="5" Grid.Column="0" VerticalAlignment="Center" ToolTip="Where the recordings from your OBS go.">OBSoutputDirectory:</Label>
+                    <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding Path=OBSoutputDirectory}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
+
+                    <Label Grid.Row="6" Grid.Column="0" VerticalAlignment="Center" ToolTip="How to name the auto recorded file.">VOD rename delay seconds:</Label>
+                    <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding Path=VODrenameDelay}" HorizontalAlignment="Left" VerticalAlignment="Center" Width="200"/>
                 </Grid>
             </Border>
         </StackPanel>

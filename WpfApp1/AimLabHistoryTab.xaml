@@ -10,7 +10,7 @@
     <StackPanel>
         <DockPanel>
             <Label Margin="10" Drop="DragDropInput" Width="100" Height="50" AllowDrop="True" HorizontalAlignment="Left" Background="LightGray">Drag 'n' Drop</Label>
-            <Button Width="80" Height="25" Click="Button_Click_4">local DB data</Button>
+            <Button Width="80" Height="25" Click="clickLocalDB">local DB data</Button>
             <Label Name="GraphTitle" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center"></Label>
         </DockPanel>
         <DockPanel Name="contentDocky">

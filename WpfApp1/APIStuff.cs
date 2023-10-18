@@ -423,5 +423,123 @@ namespace MuhAimLabScoresViewer
             }
             return null;
         }
+    
+    
+    
+        public static async Task<taskdataResult> runGetTaskResultsQuery(string klutchid)
+        {
+            if (graphQLClient == null) graphQLClient = new GraphQLHttpClient("https://api.aimlab.gg/graphql", new NewtonsoftJsonSerializer());
+            //using var graphQLClient = new GraphQLHttpClient("https://api.aimlab.gg/graphql", new NewtonsoftJsonSerializer());
+            var leaderboardRequest = new GraphQLRequest
+            {
+                Query = @"
+                query Test($limit: Int, $offset: Int, $order_by: AimlabPlayOrderBy!, $where: AimlabPlayWhere!) {
+                    aimlab {
+                            plays(limit:$limit, offset:$offset, order_by:$order_by, where:$where) {
+                                totalCount
+                                edges {
+                                    cursor
+                                    node {
+                                        id
+                                        task_name
+                                        accuracy
+                                        created_at
+                                        ended_at                                  
+                                        task_id
+                                        play_id
+                                        user_id
+                                        weapon_id
+                                        username
+                                        score
+                                        steam_id
+                                        study_id
+                                        weapon_type
+                                        map_id
+                                        is_practice
+                                    }
+                                }
+                            }
+                        }
+                }",
+                //settings_fov
+                //settings_game
+                //OperationName = "test",
+            };
+
+            leaderboardRequest.Variables = new
+            {
+                limit = 1000,
+                offset = 0,
+                order_by = new 
+                { 
+                    ended_at = "desc",
+                },
+                where = new
+                {
+                    user_id = new
+                    {
+                        _eq = klutchid,
+                    }
+                },
+            };
+
+            try
+            {
+                var graphQLResponse = await graphQLClient.SendQueryAsync<taskdataResult>(leaderboardRequest);
+                Interlocked.Increment(ref COUNTER);
+                if (graphQLResponse != null) return graphQLResponse.Data;
+                //Console.WriteLine("raw response:");
+                //Console.WriteLine(JsonSerializer.Serialize(graphQLResponse, new JsonSerializerOptions { WriteIndented = true }));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+            return null;
+        }
+
+        public class taskdataResult
+        {
+            public aimlabPart aimlab { get; set; }
+            public class aimlabPart
+            {
+                public taskPlay plays { get; set; }
+                public class taskPlay 
+                {
+                    public int totalCount { get; set; }
+                    public List<edge> edges { get; set; }
+                    public class edge
+                    {
+                        public string cursor { get; set; }
+                        public nodeThing node { get; set; }
+
+                        public class nodeThing
+                        {
+                            public string id { get; set; }
+                            public string cursor { get; set; }
+                            public string task_name { get; set; }
+                            public string task_mode_mod { get; set; }
+                            public string accuracy { get; set; }
+                            public string created_at { get; set; }
+                            public string ended_at { get; set; }
+                            public string settings_fov { get; set; }
+                            public string settings_game { get; set; }
+                            public string task_id { get; set; }
+                            public string play_id { get; set; }
+                            public string user_id { get; set; }
+                            public string weapon_id { get; set; }
+                            public string username { get; set; }
+                            public string score { get; set; }
+                            public string steam_id { get; set; }
+                            public string study_id { get; set; }
+                            public string task_mod { get; set; }
+                            public string weapon_type { get; set; }
+                            public string map_id { get; set; }
+                            public string is_practice { get; set; }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

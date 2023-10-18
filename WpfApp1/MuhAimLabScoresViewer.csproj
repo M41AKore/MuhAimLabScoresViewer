@@ -53,4 +53,10 @@
     <Resource Include="Images\redsign.png" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="LiveResultTab.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
 </Project>

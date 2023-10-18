@@ -57,6 +57,6 @@ namespace MuhAimLabScoresViewer
             else MainWindow.Instance.showMessageBox("please enter 'SteamLibraryPath' in Settings!");
         }
 
-        private void Button_Click_4(object sender, RoutedEventArgs e) => AimLabHistoryViewer.pullDataFromLocalDB();
+        private void clickLocalDB(object sender, RoutedEventArgs e) => AimLabHistoryViewer.pullDataFromLocalDB2();
     }
 }

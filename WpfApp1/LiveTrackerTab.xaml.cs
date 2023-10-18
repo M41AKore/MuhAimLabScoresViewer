@@ -19,7 +19,7 @@ namespace MuhAimLabScoresViewer
             DataContext = MainWindow.viewModel;
         }
 
-        private void Button_Click_6(object sender, RoutedEventArgs e)
+        private void clickCompreToHistoryData(object sender, RoutedEventArgs e)
         {
             try
             {

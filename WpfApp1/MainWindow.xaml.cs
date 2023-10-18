@@ -55,7 +55,11 @@ namespace MuhAimLabScoresViewer
 
             Settings.loadSettings();
 
-            if (viewModel.LiveTrackerEnabled) LiveTracker.createLiveTrackerGUI();
+            if (viewModel.LiveTrackerEnabled)
+            {
+                LiveTracker.createLiveTrackerGUI();
+                LiveTracker.generateResultView(windowTabs[5] as LiveResultTab);
+            }
         }
 
         private void initPages()
@@ -65,13 +69,15 @@ namespace MuhAimLabScoresViewer
             windowTabs.Add(new CompetitionTab() { Visibility = Visibility.Collapsed });
             windowTabs.Add(new AimLabHistoryTab() { Visibility = Visibility.Collapsed });
             windowTabs.Add(new LiveTrackerTab() { Visibility = Visibility.Collapsed });
-            windowTabs.Add(new SettingsTab() { Visibility = Visibility.Collapsed });
+            windowTabs.Add(new LiveResultTab() { Visibility = Visibility.Collapsed });
+            windowTabs.Add(new SettingsTab() { Title = "Settings", Visibility = Visibility.Collapsed });
 
             tabButtonBottomBorders.Add(TaskButton_BottomBorder);
             tabButtonBottomBorders.Add(BenchmarkButton_BottomBorder);
             tabButtonBottomBorders.Add(CompetitionButton_BottomBorder);
             tabButtonBottomBorders.Add(AimLabHistoryButton_BottomBorder);
             tabButtonBottomBorders.Add(LiveTrackerButton_BottomBorder);
+            tabButtonBottomBorders.Add(LiveResultsButton_BottomBorder);
             tabButtonBottomBorders.Add(SettingsButton_BottomBorder);
 
             changeToTab(0);
@@ -115,10 +121,16 @@ namespace MuhAimLabScoresViewer
             this.Height = 750;
             this.Width = 800;
         }
-        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        private void LiveResultButton_click(object sender, RoutedEventArgs e)
         {
             changeToTab(5);
-            this.Height = 600;
+            this.Height = 750;
+            this.Width = 800;
+        }
+        private void SettingsButton_Click(object sender, RoutedEventArgs e)
+        {
+            changeToTab(6);
+            this.Height = 700;
             this.Width = 700;
         }
         private void Button_Click(object sender, RoutedEventArgs e)

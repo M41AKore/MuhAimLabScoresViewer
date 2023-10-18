@@ -41,7 +41,7 @@ namespace MuhAimLabScoresViewer
             viewModel = MainWindow.viewModel;
         }
 
-        private void Button_Click_3(object sender, RoutedEventArgs e) => LiveTracker.simulateKeyPress(currentSettings.OBS_Hotkey);
+        private void clickTestOBSHotkey(object sender, RoutedEventArgs e) => LiveTracker.testOBSHotkey();
         private void Button_Click_5(object sender, RoutedEventArgs e) => buildklutchIdCall();
         //klutchId finder
         private async void buildklutchIdCall()

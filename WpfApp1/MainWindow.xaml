@@ -70,7 +70,15 @@
                 <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
                 <Rectangle Fill="#000" DockPanel.Dock="Right" Width="1"/>
                 <Rectangle Name="LiveTrackerButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
-                <Button Click="LiveTrackerButton_Click" Width="80" BorderThickness="0" Background="#fff">LiveTracker</Button>
+                <Button Click="LiveTrackerButton_Click" Width="80" BorderThickness="0" Background="#fff">LiveProgress</Button>
+            </DockPanel>
+
+            <DockPanel Height="20" LastChildFill="True">
+                <Rectangle Fill="#000" DockPanel.Dock="Top" Height="1"/>
+                <Rectangle Fill="#000" DockPanel.Dock="Left" Width="1"/>
+                <Rectangle Fill="#000" DockPanel.Dock="Right" Width="1"/>
+                <Rectangle Name="LiveResultsButton_BottomBorder" Fill="#000" DockPanel.Dock="Bottom" Height="1"/>
+                <Button Click="LiveResultButton_click" Width="80" BorderThickness="0" Background="#fff">LiveResult</Button>
             </DockPanel>
 
             <DockPanel Height="20" LastChildFill="True" HorizontalAlignment="Right">

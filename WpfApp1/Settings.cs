@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using System.Xml.Serialization;
 using static MuhAimLabScoresViewer.MainWindow;
@@ -61,6 +62,12 @@ namespace MuhAimLabScoresViewer
         [XmlElement]
         public bool ShowUserTaskDuration { get; set; }
 
+        [XmlElement]
+        public string OBSoutputDirectory { get; set; }
+
+        [XmlElement]
+        public int VODrenameDelay { get; set; } //seconds
+
 
         public static void loadSettings()
         {
@@ -72,9 +79,9 @@ namespace MuhAimLabScoresViewer
                 if (settings != null)
                 {
                     viewModel.klutchId = settings.klutchId;
-                    var tab = MainWindow.Instance.windowTabs[5] as SettingsTab;
+                    var tab = MainWindow.Instance.windowTabs.First(t => t.Title == "Settings") as SettingsTab;
                     if (settings.RecordingHotKey != null) tab.registerRecordingHotkey(settings);
-                    tab.recordHotkeySet.Content = settings.RecordingHotKey.ToString();
+                    tab.recordHotkeySet.Content = settings.RecordingHotKey?.ToString();
                     viewModel.onSaveReplayTakeScreenshot = settings.alsoTakeScreenshot;
                     viewModel.ScreenshotsPath = settings.ScreenshotSavePath;
                     viewModel.ReplaysPath = settings.ReplaySavePath;
@@ -87,6 +94,11 @@ namespace MuhAimLabScoresViewer
                     viewModel.LiveTrackerMinutes = settings.LiveTrackerMinutes;
                     viewModel.BenchmarkSpreadSheetId = settings.BenchmarkSheetId;
                     viewModel.ShowUserTaskDuration = settings.ShowUserTaskDuration;
+                   
+                    viewModel.ScreenshotsPath = settings.ScreenshotSavePath;
+                    viewModel.OBSoutputDirectory = settings.OBSoutputDirectory;
+                    viewModel.VODrenameDelay = settings.VODrenameDelay;
+
                     currentSettings = settings;
 
                     if (settings.SteamLibraryPath != null && Directory.Exists(settings.SteamLibraryPath))
@@ -128,6 +140,10 @@ namespace MuhAimLabScoresViewer
                     currentSettings.LiveTrackerMinutes = viewModel.LiveTrackerMinutes;
                     currentSettings.BenchmarkSheetId = viewModel.BenchmarkSpreadSheetId;
                     currentSettings.ShowUserTaskDuration = viewModel.ShowUserTaskDuration;
+
+                    currentSettings.ScreenshotSavePath = viewModel.ScreenshotsPath;
+                    currentSettings.OBSoutputDirectory = viewModel.OBSoutputDirectory;
+                    currentSettings.VODrenameDelay = viewModel.VODrenameDelay;
 
                     XmlSerializer.serializeToXml<Settings>(currentSettings, settingsPath);
                 }

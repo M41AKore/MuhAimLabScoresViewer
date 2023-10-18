@@ -165,7 +165,7 @@ namespace MuhAimLabScoresViewer
             return null;
         }
 
-        private static string getLevelIDFromES3(string filecontent)
+        public static string getLevelIDFromES3(string filecontent)
         {
             var start = filecontent.IndexOf("contentMetadata");
             var relevant = filecontent.Substring(start, filecontent.IndexOf("category") - start);
@@ -175,7 +175,7 @@ namespace MuhAimLabScoresViewer
             return result;
         }
 
-        private static string getTaskNameFromES3(string filecontent)
+        public static string getTaskNameFromES3(string filecontent)
         {
             var start = filecontent.IndexOf("contentMetadata");
             var relevant = filecontent.Substring(start, filecontent.IndexOf("category") - start);
